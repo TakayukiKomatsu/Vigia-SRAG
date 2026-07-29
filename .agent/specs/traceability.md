@@ -1,8 +1,8 @@
-# Rastreabilidade do desafio para o SDD v2
+# Rastreabilidade do desafio para o SDD v2.2
 
 > Status: DRAFT
-> Version: 2.0
-> Last Updated: 2026-07-28
+> Version: 2.2
+> Last Updated: 2026-07-29
 
 Este arquivo parafraseia as obrigações usadas na validação local. O documento
 restrito original não é reproduzido nem versionado.
@@ -32,8 +32,18 @@ e evidência planejada. Não significa que a aplicação já foi implementada.
 | `CH-18` | PDF conceitual da arquitetura | `FR-GD-5` | `AC-GD-6` | `T-GD-4` | fonte e PDF visualmente verificado |
 | `CH-19` | Entrega em cinco dias | `FR-GD-8` | `AC-GD-9` | `T-DF-7`, `T-MT-7`, `T-AR-8`, `T-GD-6` | 28 tarefas D1–D5 e checklist de release |
 
+## Hardening v2.2
+
+| Evidence | Requirements | Acceptance | Task | Executable proof | Status |
+|---|---|---|---|---|---|
+| Contrato local de comentário, modelos, retries, fallback e auditoria | `FR-AR-4`, `FR-AR-6`, `FR-AR-9`, `FR-AR-10` | `AC-AR-13` | `T-AR-5`, `T-AR-7` | `tests/test_commentary.py`, `tests/test_graph.py` | Implementação local; evidência pública aberta |
+| Redirect, DNS e limites RSS | `FR-AR-4` | `AC-AR-14` | `T-AR-3`, `T-AR-7` | `tests/test_news.py` | Implementação local |
+| Escopo de influenza e schema nacional | `FR-MT-7`, `FR-MT-10` | `AC-MT-12` | `T-MT-6` | `tests/test_governance.py` | Implementação local |
+| SIVEP oficial sem suporte CNES/PNI | `FR-GD-1` | `AC-GD-11` | `T-GD-1` | `tests/test_prepare_official_snapshot.py` | Aberto até execução oficial |
+| Metadados, conteúdo, histórico e release público | `FR-GD-6`, `FR-GD-7` | `AC-GD-12` | `T-GD-6` | `tests/test_release_checks.py`, `scripts/check_external_release.py` | Público/clone continuam bloqueados |
+
 ## Review Result
 
-- Cobertura documental v2: `COVERED BY CONTRACT`.
+- Cobertura documental v2.2: `COVERED BY CONTRACT`.
 - Implementação: `IMPLEMENTED LOCALLY`; suíte, smoke OpenRouter/RSS e gate estrito sobre fixture permitida possuem evidência reproduzida.
 - Finalização: `BLOCKED` pelos contratos oficiais ainda `UNVERIFIED`, bundle de referência baseado integralmente em dados oficiais, URL pública e clone não autenticado.

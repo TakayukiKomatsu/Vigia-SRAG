@@ -2,7 +2,7 @@
 
 > Status: DRAFT
 > Tier: extended
-> Version: 2.1
+> Version: 2.2
 > Owner: Indicium HealthCare PoC
 > Created: 2026-07-28
 > Last Updated: 2026-07-29
@@ -202,6 +202,12 @@ Stretch não começa antes dos 28 itens Must e do golden estrito.
   reprova o golden.
 - **AC-GD-9 (FR-GD-8):** O backlog possui 7+7+8+6 tarefas completas nos Dias
   1–5 e Stretch isolado.
+- **AC-GD-11 (FR-GD-1):** Evidência oficial SIVEP é registrada com proveniência;
+  CNES/PNI indisponíveis tornam as métricas dependentes indisponíveis e impedem
+  promoção a golden, sem fingir que a execução oficial falhou.
+- **AC-GD-12 (FR-GD-6, FR-GD-7):** Verificadores de metadados, conteúdo atual,
+  histórico e release externo falham fechados; a evidência externa permanece
+  vinculada à SHA imutável e clone anônimo aprovado.
 
 ## Verification Plan
 
@@ -221,6 +227,9 @@ Contratos oficiais restantes, bundle de referência real e URL pública continua
 como bloqueadores explícitos; este spec permanece `DRAFT`.
 
 ## Change Log
+
+- 2026-07-29 — v2.2: critérios executáveis adicionam proveniência SIVEP,
+  indisponibilidade explícita de CNES/PNI e verificadores de release externos.
 
 - 2026-07-29 — v2.1: OpenRouter padrão, OpenAI explícito, modelos
   solicitado/servido auditados e PNI scoped permitido somente como suplemento;

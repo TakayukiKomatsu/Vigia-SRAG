@@ -1,6 +1,6 @@
 @draft @agentic-reporting
 Feature: Geração agentiva fundamentada do relatório Brasil de SRAG
-  Os cenários derivam do spec.md versão 2.1.
+  Os cenários derivam do spec.md versão 2.2.
 
   @ch-01 @ch-11 @ch-13 @fr-ar-1 @fr-ar-2 @ac-ar-1
   Scenario: Orquestrar uma solicitação Brasil válida
@@ -121,3 +121,50 @@ Feature: Geração agentiva fundamentada do relatório Brasil de SRAG
     When o mesmo EvidenceBundle for processado duas vezes
     Then claims e decisões normalizadas devem ser idênticas
     And nenhuma chamada live de provedor ou RSS deve ocorrer
+
+  @ch-01 @fr-ar-6 @ac-ar-13
+  Scenario Outline: Selecionar e registrar o provedor aprovado
+    Given o modo live com provedor "<provider>"
+    When o comentário for gerado
+    Then o modelo solicitado e o modelo servido não-vazios devem ser auditados
+
+    Examples:
+      | provider   |
+      | openrouter |
+      | openai     |
+
+  @ch-13 @fr-ar-6 @fr-ar-9 @ac-ar-13
+  Scenario Outline: Validar localmente claims e classificar falhas
+    Given resposta do provedor com "<condition>"
+    When o DTO local for validado
+    Then a política documentada deve ser aplicada sem rótulo específico de provedor
+
+    Examples:
+      | condition                         |
+      | exatamente três claims válidas     |
+      | uma falha transitória e sucesso    |
+      | duas falhas transitórias           |
+      | falha 4xx não-retryable            |
+      | uma ou quatro claims               |
+      | texto longo ou com dígitos         |
+      | ID de evidência desconhecido       |
+
+  @ch-13 @ch-15 @fr-ar-4 @fr-ar-5 @fr-ar-10 @ac-ar-13
+  Scenario: Excluir notícias cruas e auditar rejeição de comentário
+    Given RSS com título malicioso e URL de artigo
+    When o payload do provedor e a rejeição forem produzidos
+    Then título, URL e IDs news não devem entrar no payload
+    And um evento sanitizado "commentary_rejected" deve conter somente IDs permitidos
+
+  @ch-03 @ch-13 @fr-ar-4 @ac-ar-14
+  Scenario Outline: Bloquear redirect e recursos RSS fora da política
+    Given uma resposta RSS com "<condition>"
+    When feed inicial ou link de artigo for buscado
+    Then nenhum destino proibido deve ser acessado
+
+    Examples:
+      | condition                         |
+      | redirect inicial para loopback     |
+      | redirect de artigo para host privado |
+      | corpo maior que um MiB             |
+      | título, fonte ou URL maior que limite |

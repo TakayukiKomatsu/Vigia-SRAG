@@ -1,5 +1,8 @@
 # OpenRouter Completion Implementation Plan
 
+> Version: 2.2
+> Last Updated: 2026-07-29
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make `srag-report live` use OpenRouter through the installed OpenAI Python client, treat scoped influenza coverage as supplementary in strict-golden evaluation, and align verified SDD evidence without claiming the owner's pending public release.

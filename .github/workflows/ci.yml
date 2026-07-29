@@ -31,6 +31,18 @@ jobs:
         run: uv run mypy src
       - name: pytest
         run: uv run pytest
+      - name: Validate SDD traceability
+        run: |
+          uv run python scripts/check_traceability.py .agent/specs/01-data-foundation
+          uv run python scripts/check_traceability.py .agent/specs/02-epidemiological-metrics
+          uv run python scripts/check_traceability.py .agent/specs/03-agentic-reporting
+          uv run python scripts/check_traceability.py .agent/specs/04-governance-delivery
+      - name: Validate release metadata
+        run: uv run python scripts/check_release_metadata.py
+      - name: Validate tracked and historical release contents
+        run: |
+          uv run python scripts/check_release_contents.py
+          uv run python scripts/check_release_contents.py --history
 
   secrets:
     runs-on: ubuntu-latest

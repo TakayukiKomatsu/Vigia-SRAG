@@ -1,6 +1,6 @@
 @draft @metrics
 Feature: Métricas e gráficos epidemiológicos Brasil de SRAG
-  Os cenários derivam do spec.md versão 2.1.
+  Os cenários derivam do spec.md versão 2.2.
 
   Background:
     Given que existe um snapshot canônico Brasil com contratos verificados
@@ -116,6 +116,20 @@ Feature: Métricas e gráficos epidemiológicos Brasil de SRAG
     Then a observação deve permanecer explicitamente regional e suplementar
     And nunca deve ser rotulada como "nationwide"
     And o golden run pode passar quando as outras cinco métricas forem nacionais e sem escopo
+
+  @ch-07 @ch-13 @fr-mt-7 @fr-mt-10 @ac-mt-12
+  Scenario: Rejeitar cobertura disponível sem escopo e preservar indisponibilidade válida
+    Given cobertura de influenza disponível sem population_scope
+    When o manifesto for validado
+    Then a execução deve falhar com "influenza_scope_missing"
+    Given cobertura de influenza indisponível sem population_scope
+    Then o resultado indisponível deve continuar válido
+
+  @ch-07 @ch-13 @fr-mt-10 @ac-mt-12
+  Scenario: Rejeitar escopo em métrica nacional no carregamento
+    Given evidência serializada de case_growth com population_scope
+    When o manifesto for carregado
+    Then deve falhar com "invalid_manifest_or_evidence"
 
   @ch-08 @fr-mt-8 @fr-mt-10 @nfr-mt-5 @ac-mt-8
   Scenario: Produzir série e gráfico diário fiéis

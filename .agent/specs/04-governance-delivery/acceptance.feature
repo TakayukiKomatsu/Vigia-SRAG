@@ -1,6 +1,6 @@
 @draft @governance-delivery
 Feature: Governança, transparência e entrega da PoC SRAG
-  Os cenários derivam do spec.md versão 2.1.
+  Os cenários derivam do spec.md versão 2.2.
 
   @ch-01 @ch-03 @ch-04 @ch-05 @ch-06 @ch-07 @ch-08 @ch-09 @ch-12 @fr-gd-1 @nfr-gd-1 @nfr-gd-2 @ac-gd-1
   Scenario: Aprovar somente o golden run completo
@@ -41,6 +41,20 @@ Feature: Governança, transparência e entrega da PoC SRAG
     Given uma execução com aumento de casos e population_scope regional
     When o gate golden for aplicado
     Then a execução não deve ser elegível ao golden run
+
+  @ch-13 @fr-gd-1 @ac-gd-1
+  Scenario: Rejeitar modelo servido em branco
+    Given uma execução candidata com modelo servido vazio ou somente espaços
+    When o gate golden for aplicado
+    Then a execução deve falhar com "unapproved_or_unserved_model"
+
+  @ch-07 @ch-12 @fr-gd-1 @ac-gd-11
+  Scenario: Manter execução SIVEP oficial honesta sem fontes de suporte
+    Given evidência oficial SIVEP com URL, hash, licença, linhas e mapeamento
+    And CNES e PNI ausentes ou não verificados
+    When o relatório oficial for produzido
+    Then as métricas dependentes devem ficar indisponíveis com limitações
+    And a execução não deve ser promovida a golden
 
   @ch-17 @fr-gd-3 @nfr-gd-3 @ac-gd-3
   Scenario: Reproduzir o quickstart determinístico
@@ -92,6 +106,13 @@ Feature: Governança, transparência e entrega da PoC SRAG
     Then o quickstart determinístico deve funcionar sem edição
     And o run ID, as evidências e o HTML de exemplo devem ser localizáveis
     And a evidência do golden live sanitizado deve estar disponível
+
+  @ch-17 @fr-gd-6 @fr-gd-7 @ac-gd-12
+  Scenario: Validar evidência externa de release por SHA imutável
+    Given release GitHub v2.2, asset de evidência e resultado de clone anônimo
+    When o verificador externo receber a SHA candidata
+    Then tag, SHA, asset e clone aprovado devem corresponder
+    And divergência deve falhar fechada
 
   @ch-19 @fr-gd-8 @ac-gd-9
   Scenario: Respeitar o plano de cinco dias

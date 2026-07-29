@@ -2,7 +2,7 @@
 
 > Status: DRAFT
 > Tier: extended
-> Version: 2.1
+> Version: 2.2
 > Owner: Indicium HealthCare PoC
 > Created: 2026-07-28
 > Last Updated: 2026-07-29
@@ -69,7 +69,7 @@ tools explícitas também não demonstra a arquitetura solicitada.
 - geografia diferente de Brasil;
 - SQL, URL de busca, prompt ou loop de tools arbitrários;
 - busca web aberta ou leitura integral de artigos;
-- múltiplos provedores de LLM;
+- provedores além de OpenRouter padrão e OpenAI explícito;
 - PDF do relatório;
 - diagnóstico, recomendação clínica ou causalidade não sustentada.
 
@@ -286,6 +286,11 @@ validados, nunca do texto livre.
   aplicados.
 - **AC-AR-12 (NFR-AR-3, NFR-AR-6):** Adaptador fake e RSS fixo produzem
   execução determinística sem chamadas live no CI.
+- **AC-AR-13 (FR-AR-4, FR-AR-6, FR-AR-9, FR-AR-10):** Contratos locais
+  impõem três claims, tentativa transitória limitada, falhas neutras ao
+  provedor, exclusão de notícias do payload e evento de rejeição sanitizado.
+- **AC-AR-14 (FR-AR-4):** Toda requisição RSS aplica redirects, limites de
+  resposta/campos e bloqueia destinos não globais antes da conexão.
 
 ## Verification Plan
 
@@ -303,6 +308,9 @@ O smoke OpenRouter padrão foi concluído. O spec permanece `DRAFT` pelos
 contratos oficiais e pelo release público, não por uma decisão de provedor.
 
 ## Change Log
+
+- 2026-07-29 — v2.2: aceitação enumera contratos locais de comentário e a
+  política RSS limitada; rastreabilidade aponta para testes executáveis.
 
 - 2026-07-29 — v2.1: OpenRouter padrão via cliente compatível, OpenAI explícito,
   modelos solicitado/servido auditados e influenza scoped permitida apenas

@@ -2,7 +2,7 @@
 
 > Status: DRAFT
 > Tier: extended
-> Version: 2.1
+> Version: 2.2
 > Owner: Indicium HealthCare PoC
 > Created: 2026-07-28
 > Last Updated: 2026-07-29
@@ -242,6 +242,10 @@ determinístico; o LLM recebe somente resultados agregados validados.
   proveniência, qualidade e motivo estruturado.
 - **AC-MT-11 (NFR-MT-1, NFR-MT-3, NFR-MT-4):** Repetibilidade, acesso somente
   leitura, ausência de cálculo no LLM e limite da fixture são verificáveis.
+- **AC-MT-12 (FR-MT-7, FR-MT-10):** Cobertura disponível sem
+  `population_scope` é rejeitada; cobertura indisponível sem escopo continua
+  válida, e escopo em métrica não-influenza é rejeitado no carregamento como
+  `invalid_manifest_or_evidence`.
 
 ## Verification Plan
 
@@ -259,6 +263,10 @@ do anexo SDD 01. A política de escopo suplementar está fechada, mas este spec
 permanece `DRAFT` enquanto contratos oficiais ainda estiverem `UNVERIFIED`.
 
 ## Change Log
+
+- 2026-07-29 — v2.2: cenários executáveis distinguem escopo ausente em
+  influenza disponível do resultado indisponível e fixam a rejeição de schema
+  `invalid_manifest_or_evidence` para escopo não-influenza.
 
 - 2026-07-29 — v2.1: cobertura PNI regional mantida como suplemento limitado,
   sem rótulo nacional; somente as outras cinco métricas exigem escopo nacional
