@@ -41,6 +41,9 @@ line-length = 100
 select = ["E", "F", "I", "UP", "B", "ANN"]
 ignore = ["ANN101", "ANN102"]
 
+[tool.ruff.lint.isort]
+known-first-party = ["data", "srag_report"]
+
 [tool.mypy]
 python_version = "3.12"
 strict = true
