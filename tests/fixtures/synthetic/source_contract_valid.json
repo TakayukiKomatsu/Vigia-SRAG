@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "contract_version": "test-2.2",
+  "contract_date": "2026-07-29",
+  "cnes_competencia": 202606,
+  "cnes_icu_allowlist": [61, 62, 63, 75, 76, 79, 80, 81, 82],
+  "sources": [
+    {
+      "family": "ibge",
+      "identifier": "ibge_2025",
+      "sha256": "33dc6f79def9522e282cd69b87a9ce75327a81239d6060d9c8f9f5a49bd2a1b5",
+      "local_path": "data/raw/ibge/POP2025_20260113.ods",
+      "size_bytes": 212846,
+      "data_rows": 5599,
+      "retrieval_at": "2026-07-29T00:00:00Z",
+      "watermark": "2025-07-01",
+      "status": "VERIFIED",
+      "year": 2025
+    }
+  ]
+}

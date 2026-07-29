@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0",
+  "contract_version": "test-bad",
+  "contract_date": "2026-07-29",
+  "cnes_competencia": 202606,
+  "cnes_icu_allowlist": [61, 62, 63, 74, 75, 76, 79, 80, 81, 82],
+  "sources": []
+}

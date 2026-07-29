@@ -1,0 +1,14 @@
+{
+  "recorded_at": "2026-07-28",
+  "google_news_rss": {
+    "status": "success",
+    "accepted_items": 1,
+    "sources": ["G1"]
+  },
+  "openai": {
+    "status": "not_run",
+    "requested_model": "gpt-5.6",
+    "reason": "OPENAI_API_KEY is not configured in the execution environment"
+  },
+  "golden_status_promoted": false
+}

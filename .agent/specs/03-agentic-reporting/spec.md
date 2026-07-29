@@ -40,7 +40,8 @@ tools explícitas também não demonstra a arquitetura solicitada.
   gráficos, contexto, métodos, fontes, watermarks, qualidade, limitações e
   `run_id`.
 - **FR-AR-9:** Aplicar matriz de falhas inequívoca e fallback factual sem
-  permitir que relatório degradado satisfaça o golden run.
+  permitir que relatório degradado ou com observações limitadas/scoped satisfaça
+  o golden run.
 - **FR-AR-10:** Ser dono de `AuditSink`, eventos JSONL, run bundle, limites e
   comportamento fail-closed para eventos críticos.
 
@@ -218,13 +219,25 @@ brutos, corpo integral de notícia ou objeto fora da allowlist do evento. Falha
 ao persistir evento crítico antes da OpenAI ou publicação interrompe a
 execução.
 
-## Failure Matrix
+## Scoped and Limited Observations
 
+Uma métrica pode ter escopo geográfico ou cobertura populacional limitada.
+Exemplos: campanha de influenza com grupos-alvo definidos ou regiões de
+residência. Tais observações devem ser claramente identificadas como limitadas
+e nunca rotuladas como nacionais ou elegíveis ao golden run.
+
+Quando a métrica depender de observação com escopo ou cobertura cutoff
+inelegível (não publicada até `as_of` solicitado), o resultado fica
+indisponível e a seção é renderizada explicitamente com limitação estruturada.
+Nunca substitui com substituto inventado.
+
+## Failure Matrix
 | Falha | Rota | Publica | Golden |
 |---|---|---|---|
 | request inválido ou `as_of` após watermark | termina antes das tools/OpenAI | não | não |
 | snapshot, hash, schema ou evidência inválida | termina antes da OpenAI | não | não |
 | métrica indisponível com motivo válido | seção explícita | sim, degradado | não |
+| métrica com escopo ou cobertura geográfica limitada | seção explícita com limitação | sim, degradado | não |
 | nenhuma notícia válida após retry permitido | relatório quantitativo com limitação | sim, degradado | não |
 | OpenAI falha após retry ou claims são inválidas | comentário factual determinístico | sim, degradado | não |
 | gráfico ou renderer falha | termina publicação | não | não |
@@ -256,10 +269,12 @@ validados, nunca do texto livre.
   são rejeitadas e auditadas.
 - **AC-AR-8 (FR-AR-8):** HTML contém todas as seções e objetos obrigatórios.
 - **AC-AR-9 (FR-AR-9, NFR-AR-4):** Cada falha segue uma rota única e nenhum
-  degradado é golden.
-- **AC-AR-10 (FR-AR-10):** Limites, eventos críticos, hashes e sanitização são
+  degradado ou com escopo limitado é golden.
+- **AC-AR-10 (FR-AR-9):** Métricas com observações scoped ou cutoff-inelegível
+  são marcadas explicitamente como limitadas, nunca rotuladas nacionais.
+- **AC-AR-11 (FR-AR-10):** Limites, eventos críticos, hashes e sanitização são
   aplicados.
-- **AC-AR-11 (NFR-AR-3, NFR-AR-6):** Fake OpenAI e RSS fixo produzem execução
+- **AC-AR-12 (NFR-AR-3, NFR-AR-6):** Fake OpenAI e RSS fixo produzem execução
   determinística sem chamadas live no CI.
 
 ## Verification Plan

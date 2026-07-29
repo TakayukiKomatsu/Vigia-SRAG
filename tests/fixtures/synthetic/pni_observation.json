@@ -1,0 +1,14 @@
+{
+  "campaign_year": 2026,
+  "immunobiological": "INF3",
+  "population_scope": ["NE", "CO", "S", "SE"],
+  "period_start": "2026-03-28",
+  "period_end": "2026-05-30",
+  "numerator": 61700,
+  "denominator": 100000,
+  "coverage_pct": "61.70",
+  "published_at": "2026-07-27T12:00:00Z",
+  "source_label": "synthetic-pni-observation",
+  "is_nationwide": false,
+  "is_golden": false
+}

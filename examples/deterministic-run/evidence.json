@@ -1,0 +1,520 @@
+{
+  "request": {
+    "geography": "BR",
+    "as_of": "2026-07-28",
+    "snapshot_id": "synthetic-demo",
+    "run_id": "deterministic-run"
+  },
+  "metrics": [
+    {
+      "metric_id": "case_growth",
+      "label": "Taxa de aumento de casos",
+      "value": 0.0,
+      "state": "available",
+      "reason": null,
+      "unit": "%",
+      "numerator": 0.0,
+      "denominator": 7.0,
+      "period_start": "2026-07-05",
+      "period_end": "2026-07-11",
+      "geography": "BR",
+      "snapshot_id": "synthetic-demo",
+      "formula_version": "case_growth_v1",
+      "quality": {
+        "completeness": 1.0,
+        "state": "available",
+        "blocker": null
+      },
+      "source_ids": [
+        "sivep"
+      ],
+      "limitations": [
+        "Casos na semana de referência: 7; semana anterior: 7."
+      ],
+      "population_scope": null
+    },
+    {
+      "metric_id": "mortality_per_100k",
+      "label": "Taxa de mortalidade por SRAG",
+      "value": 0.0,
+      "state": "available",
+      "reason": null,
+      "unit": "óbitos por 100 mil habitantes",
+      "numerator": 3.0,
+      "denominator": 213421037.0,
+      "period_start": "2026-06-14",
+      "period_end": "2026-07-11",
+      "geography": "BR",
+      "snapshot_id": "synthetic-demo",
+      "formula_version": "mortality_per_100k_v1",
+      "quality": {
+        "completeness": 1.0,
+        "state": "available",
+        "blocker": null
+      },
+      "source_ids": [
+        "sivep",
+        "ibge"
+      ],
+      "limitations": [],
+      "population_scope": null
+    },
+    {
+      "metric_id": "hospital_cfr",
+      "label": "Letalidade hospitalar suplementar por SRAG",
+      "value": 7.14,
+      "state": "available",
+      "reason": null,
+      "unit": "%",
+      "numerator": 2.0,
+      "denominator": 28.0,
+      "period_start": "2026-05-31",
+      "period_end": "2026-06-27",
+      "geography": "BR",
+      "snapshot_id": "synthetic-demo",
+      "formula_version": "hospital_cfr_v1",
+      "quality": {
+        "completeness": 1.0,
+        "state": "available",
+        "blocker": null
+      },
+      "source_ids": [
+        "sivep"
+      ],
+      "limitations": [
+        "0 internações com evolução desconhecida foram excluídas."
+      ],
+      "population_scope": null
+    },
+    {
+      "metric_id": "icu_pressure",
+      "label": "Pressão estimada de SRAG sobre a capacidade registrada de UTI",
+      "value": 1.0,
+      "state": "available",
+      "reason": null,
+      "unit": "%",
+      "numerator": 30.0,
+      "denominator": 3000.0,
+      "period_start": "2026-06-01",
+      "period_end": "2026-06-30",
+      "geography": "BR",
+      "snapshot_id": "synthetic-demo",
+      "formula_version": "icu_pressure_v1",
+      "quality": {
+        "completeness": 1.0,
+        "state": "available",
+        "blocker": null
+      },
+      "source_ids": [
+        "sivep",
+        "cnes"
+      ],
+      "limitations": [
+        "Não é ocupação observada por todas as causas; usa capacidade CNES registrada.",
+        "0 permanências sem saída conhecida foram excluídas."
+      ],
+      "population_scope": null
+    },
+    {
+      "metric_id": "icu_use",
+      "label": "Uso de UTI entre hospitalizações por SRAG — indicador suplementar",
+      "value": 32.14,
+      "state": "available",
+      "reason": null,
+      "unit": "%",
+      "numerator": 9.0,
+      "denominator": 28.0,
+      "period_start": "2026-06-14",
+      "period_end": "2026-07-11",
+      "geography": "BR",
+      "snapshot_id": "synthetic-demo",
+      "formula_version": "icu_use_v1",
+      "quality": {
+        "completeness": 1.0,
+        "state": "available",
+        "blocker": null
+      },
+      "source_ids": [
+        "sivep"
+      ],
+      "limitations": [
+        "Indicador de uso entre casos SRAG; não representa ocupação de leitos."
+      ],
+      "population_scope": null
+    },
+    {
+      "metric_id": "influenza_coverage",
+      "label": "Cobertura vacinal contra influenza 2026",
+      "value": 61.7,
+      "state": "available",
+      "reason": null,
+      "unit": "%",
+      "numerator": 61700.0,
+      "denominator": 100000.0,
+      "period_start": "2026-03-01",
+      "period_end": "2026-05-31",
+      "geography": "BR",
+      "snapshot_id": "synthetic-demo",
+      "formula_version": "influenza_coverage_v1",
+      "quality": {
+        "completeness": 1.0,
+        "state": "available",
+        "blocker": null
+      },
+      "source_ids": [
+        "pni"
+      ],
+      "limitations": [
+        "Cobertura de escopo regional; não representa cobertura nacional."
+      ],
+      "population_scope": [
+        "CO",
+        "NE",
+        "S",
+        "SE"
+      ]
+    }
+  ],
+  "series": [
+    {
+      "series_id": "daily_srag_cases",
+      "granularity": "daily",
+      "points": [
+        {
+          "period": "2026-06-29",
+          "value": 1,
+          "state": "stable"
+        },
+        {
+          "period": "2026-06-30",
+          "value": 1,
+          "state": "stable"
+        },
+        {
+          "period": "2026-07-01",
+          "value": 1,
+          "state": "stable"
+        },
+        {
+          "period": "2026-07-02",
+          "value": 1,
+          "state": "stable"
+        },
+        {
+          "period": "2026-07-03",
+          "value": 1,
+          "state": "stable"
+        },
+        {
+          "period": "2026-07-04",
+          "value": 1,
+          "state": "stable"
+        },
+        {
+          "period": "2026-07-05",
+          "value": 1,
+          "state": "stable"
+        },
+        {
+          "period": "2026-07-06",
+          "value": 1,
+          "state": "stable"
+        },
+        {
+          "period": "2026-07-07",
+          "value": 1,
+          "state": "stable"
+        },
+        {
+          "period": "2026-07-08",
+          "value": 1,
+          "state": "stable"
+        },
+        {
+          "period": "2026-07-09",
+          "value": 1,
+          "state": "stable"
+        },
+        {
+          "period": "2026-07-10",
+          "value": 1,
+          "state": "stable"
+        },
+        {
+          "period": "2026-07-11",
+          "value": 1,
+          "state": "stable"
+        },
+        {
+          "period": "2026-07-12",
+          "value": 1,
+          "state": "stable"
+        },
+        {
+          "period": "2026-07-13",
+          "value": 1,
+          "state": "stable"
+        },
+        {
+          "period": "2026-07-14",
+          "value": 1,
+          "state": "stable"
+        },
+        {
+          "period": "2026-07-15",
+          "value": 1,
+          "state": "provisional"
+        },
+        {
+          "period": "2026-07-16",
+          "value": 1,
+          "state": "provisional"
+        },
+        {
+          "period": "2026-07-17",
+          "value": 1,
+          "state": "provisional"
+        },
+        {
+          "period": "2026-07-18",
+          "value": 1,
+          "state": "provisional"
+        },
+        {
+          "period": "2026-07-19",
+          "value": 1,
+          "state": "provisional"
+        },
+        {
+          "period": "2026-07-20",
+          "value": 1,
+          "state": "provisional"
+        },
+        {
+          "period": "2026-07-21",
+          "value": 1,
+          "state": "provisional"
+        },
+        {
+          "period": "2026-07-22",
+          "value": 1,
+          "state": "provisional"
+        },
+        {
+          "period": "2026-07-23",
+          "value": 1,
+          "state": "provisional"
+        },
+        {
+          "period": "2026-07-24",
+          "value": 1,
+          "state": "provisional"
+        },
+        {
+          "period": "2026-07-25",
+          "value": 1,
+          "state": "provisional"
+        },
+        {
+          "period": "2026-07-26",
+          "value": 1,
+          "state": "provisional"
+        },
+        {
+          "period": "2026-07-27",
+          "value": 1,
+          "state": "provisional"
+        },
+        {
+          "period": "2026-07-28",
+          "value": 1,
+          "state": "provisional"
+        }
+      ],
+      "period_start": "2026-06-29",
+      "period_end": "2026-07-28",
+      "geography": "BR",
+      "snapshot_id": "synthetic-demo",
+      "quality": {
+        "completeness": 1.0,
+        "state": "available",
+        "blocker": null
+      },
+      "source_ids": [
+        "sivep"
+      ]
+    },
+    {
+      "series_id": "monthly_srag_cases",
+      "granularity": "monthly",
+      "points": [
+        {
+          "period": "2025-07-01",
+          "value": 31,
+          "state": "stable"
+        },
+        {
+          "period": "2025-08-01",
+          "value": 31,
+          "state": "stable"
+        },
+        {
+          "period": "2025-09-01",
+          "value": 30,
+          "state": "stable"
+        },
+        {
+          "period": "2025-10-01",
+          "value": 31,
+          "state": "stable"
+        },
+        {
+          "period": "2025-11-01",
+          "value": 30,
+          "state": "stable"
+        },
+        {
+          "period": "2025-12-01",
+          "value": 31,
+          "state": "stable"
+        },
+        {
+          "period": "2026-01-01",
+          "value": 31,
+          "state": "stable"
+        },
+        {
+          "period": "2026-02-01",
+          "value": 28,
+          "state": "stable"
+        },
+        {
+          "period": "2026-03-01",
+          "value": 31,
+          "state": "stable"
+        },
+        {
+          "period": "2026-04-01",
+          "value": 30,
+          "state": "stable"
+        },
+        {
+          "period": "2026-05-01",
+          "value": 31,
+          "state": "stable"
+        },
+        {
+          "period": "2026-06-01",
+          "value": 30,
+          "state": "stable"
+        }
+      ],
+      "period_start": "2025-07-01",
+      "period_end": "2026-06-30",
+      "geography": "BR",
+      "snapshot_id": "synthetic-demo",
+      "quality": {
+        "completeness": 1.0,
+        "state": "available",
+        "blocker": null
+      },
+      "source_ids": [
+        "sivep"
+      ]
+    }
+  ],
+  "charts": [
+    {
+      "chart_id": "daily_srag_cases_svg",
+      "series_id": "daily_srag_cases",
+      "path": "charts/daily-cases.svg",
+      "sha256": "fbd343ed6e766a0ee710c0532341f99be0c9e05ecf3f002f7c1a861d36e190a6",
+      "title": "Casos diários de SRAG — Brasil",
+      "period": "2026-06-29 a 2026-07-28",
+      "unit": "casos",
+      "source_ids": [
+        "sivep"
+      ],
+      "watermark": "2026-07-28",
+      "alt_text": "Gráfico da série Casos diários de SRAG — Brasil, com 30 pontos de 2026-06-29 a 2026-07-28, em casos. Fonte: sivep. Watermark: 2026-07-28."
+    },
+    {
+      "chart_id": "monthly_srag_cases_svg",
+      "series_id": "monthly_srag_cases",
+      "path": "charts/monthly-cases.svg",
+      "sha256": "d6f5b7a706f1700bba2e8569fa3810e8c9ac788999894c54032a7afaf110e400",
+      "title": "Casos mensais de SRAG — Brasil",
+      "period": "2025-07-01 a 2026-06-30",
+      "unit": "casos",
+      "source_ids": [
+        "sivep"
+      ],
+      "watermark": "2026-07-28",
+      "alt_text": "Gráfico da série Casos mensais de SRAG — Brasil, com 12 pontos de 2025-07-01 a 2026-06-30, em casos. Fonte: sivep. Watermark: 2026-07-28."
+    }
+  ],
+  "news": [
+    {
+      "news_id": "demo-news",
+      "title": "Boletim sintético de SRAG para demonstração não-live",
+      "source": "Agência Brasil",
+      "final_url": "https://agenciabrasil.ebc.com.br/saude/noticia/demo",
+      "published_at": "2026-07-27T12:00:00Z",
+      "collected_at": "2026-07-28T12:00:00Z"
+    }
+  ],
+  "sources": [
+    "CNES",
+    "IBGE",
+    "PNI",
+    "SIVEP-Gripe"
+  ],
+  "watermarks": {
+    "SIVEP-Gripe": "2026-07-28",
+    "CNES": "2026-07-28",
+    "IBGE": "2026-07-28",
+    "PNI": "2026-07-28"
+  },
+  "quality": [
+    {
+      "completeness": 1.0,
+      "state": "available",
+      "blocker": null
+    },
+    {
+      "completeness": 1.0,
+      "state": "available",
+      "blocker": null
+    },
+    {
+      "completeness": 1.0,
+      "state": "available",
+      "blocker": null
+    },
+    {
+      "completeness": 1.0,
+      "state": "available",
+      "blocker": null
+    },
+    {
+      "completeness": 1.0,
+      "state": "available",
+      "blocker": null
+    },
+    {
+      "completeness": 1.0,
+      "state": "available",
+      "blocker": null
+    },
+    {
+      "completeness": 1.0,
+      "state": "available",
+      "blocker": null
+    },
+    {
+      "completeness": 1.0,
+      "state": "available",
+      "blocker": null
+    }
+  ]
+}

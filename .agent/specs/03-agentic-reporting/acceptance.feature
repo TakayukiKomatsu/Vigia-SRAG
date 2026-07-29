@@ -96,7 +96,17 @@ Feature: Geração agentiva fundamentada do relatório Brasil de SRAG
       | gráfico    | publicação interrompida         |
       | auditoria  | publicação interrompida         |
 
-  @ch-11 @ch-12 @ch-13 @fr-ar-10 @ac-ar-10
+
+  @ch-13 @ch-15 @fr-ar-9 @ac-ar-10
+  Scenario: Renderizar métrica com escopo geográfico como limitada
+    Given uma observação de campanha de vacinação com escopo regional NE/CO/S/SE
+    When o relatório for renderizado
+    Then a seção de vacinação deve ser claramente marcada como limitada
+    And não deve ser rotulada como cobertura nacional
+    And não deve ser elegível ao golden run
+    And a limitação de escopo deve estar explícita nas fontes/métodos
+
+  @ch-11 @ch-12 @ch-13 @fr-ar-10 @ac-ar-11
   Scenario: Aplicar limites e auditoria crítica
     Given limites configurados de chamadas, retry, notícias, tokens e 120 segundos
     When a execução atingir um limite ou evento crítico
@@ -105,7 +115,7 @@ Feature: Geração agentiva fundamentada do relatório Brasil de SRAG
     And falha de evento crítico deve impedir OpenAI ou publicação
     And o bundle não deve conter segredo, linha clínica, payload bruto ou corpo integral de notícia
 
-  @ch-16 @nfr-ar-3 @nfr-ar-6 @ac-ar-11
+  @ch-16 @nfr-ar-3 @nfr-ar-6 @ac-ar-12
   Scenario: Executar deterministicamente sem chamadas live no CI
     Given OpenAI fake e RSS fixo
     When o mesmo EvidenceBundle for processado duas vezes

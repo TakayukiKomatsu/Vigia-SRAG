@@ -1,0 +1,66 @@
+{
+  "run_id": "deterministic-run",
+  "snapshot_id": "synthetic-demo",
+  "generated_at": "2026-07-28T12:00:00Z",
+  "as_of": "2026-07-28",
+  "status": "result",
+  "degraded_reasons": [
+    "openai_unavailable"
+  ],
+  "requested_model": "fake-requested",
+  "served_model": "fallback",
+  "execution_mode": "deterministic",
+  "commentary_claims": [
+    {
+      "claim_id": "fallback-case_growth",
+      "text": "Taxa de aumento de casos: 0 %.",
+      "evidence_ids": [
+        "metric:case_growth"
+      ]
+    },
+    {
+      "claim_id": "fallback-mortality_per_100k",
+      "text": "Taxa de mortalidade por SRAG: 0 óbitos por 100 mil habitantes.",
+      "evidence_ids": [
+        "metric:mortality_per_100k"
+      ]
+    },
+    {
+      "claim_id": "fallback-hospital_cfr",
+      "text": "Letalidade hospitalar suplementar por SRAG: 7.14 %.",
+      "evidence_ids": [
+        "metric:hospital_cfr"
+      ]
+    },
+    {
+      "claim_id": "fallback-icu_pressure",
+      "text": "Pressão estimada de SRAG sobre a capacidade registrada de UTI: 1 %.",
+      "evidence_ids": [
+        "metric:icu_pressure"
+      ]
+    },
+    {
+      "claim_id": "fallback-icu_use",
+      "text": "Uso de UTI entre hospitalizações por SRAG — indicador suplementar: 32.14 %.",
+      "evidence_ids": [
+        "metric:icu_use"
+      ]
+    },
+    {
+      "claim_id": "fallback-influenza_coverage",
+      "text": "Cobertura vacinal contra influenza 2026: 61.7 %.",
+      "evidence_ids": [
+        "metric:influenza_coverage"
+      ]
+    }
+  ],
+  "fallback_used": true,
+  "artifact_hashes": {
+    "request.json": "34d53bdbccc5c469b175e75fe7453c254356d3b867e5f89cab4a1be242731269",
+    "evidence.json": "32137c3d7337b95b5b28c93954cccdec8e0479b5c64fe8512d3bd09409750013",
+    "audit.jsonl": "adf057c0e146b98e5156c41e91c6368e20a73077622eebea0a11546c047f871c",
+    "report.html": "ffe3b72c5c283d016f360ee4daa83e69deb60911ffe198b92e94a1f809ad926c",
+    "charts/daily-cases.svg": "fbd343ed6e766a0ee710c0532341f99be0c9e05ecf3f002f7c1a861d36e190a6",
+    "charts/monthly-cases.svg": "d6f5b7a706f1700bba2e8569fa3810e8c9ac788999894c54032a7afaf110e400"
+  }
+}

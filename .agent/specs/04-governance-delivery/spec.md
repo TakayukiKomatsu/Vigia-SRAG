@@ -72,12 +72,13 @@ evidências registradas.
 
 O relatório de referência passa somente se contiver:
 
-1. aumento de casos real e disponível;
-2. mortalidade populacional real e disponível;
-3. pressão estimada de SRAG sobre capacidade registrada de UTI real e
-   disponível;
-4. cobertura oficial de influenza 2026 real e disponível;
-5. letalidade hospitalar e uso de UTI suplementares;
+1. aumento de casos real, disponível e não-scoped nacionalmente;
+2. mortalidade populacional real, disponível e não-scoped nacionalmente;
+3. pressão estimada de SRAG sobre capacidade registrada de UTI real,
+   disponível e não-scoped nacionalmente;
+4. cobertura oficial de influenza 2026 real, disponível, elegível
+   nacionalmente (não limitada a regiões específicas) e publicada até `as_of`;
+5. letalidade hospitalar e uso de UTI suplementares, não-scoped;
 6. gráfico diário completo de 30 dias;
 7. gráfico mensal completo de 12 meses;
 8. ao menos uma notícia recente válida coletada ao vivo;
@@ -87,7 +88,8 @@ O relatório de referência passa somente se contiver:
     `manifest.json` íntegros e sanitizados.
 
 Qualquer ausência falha o golden. Métrica indisponível não satisfaz o item
-correspondente.
+correspondente. Observação com escopo geográfico ou cobertura limitada não é
+elegível e deve renderizar explicitamente como limitada.
 
 ## Degradation and Security
 
@@ -191,6 +193,9 @@ Stretch não começa antes dos 28 itens Must e do golden estrito.
   files, histórico e ignores passam.
 - **AC-GD-8 (FR-GD-7):** URL pública e clone não autenticado reproduzem a demo
   e expõem evidência de release.
+- **AC-GD-10 (FR-GD-1):** Observações com escopo geográfico ou cobertura
+  regional limitada nunca são selecionadas como golden; devem renderizar como
+  explicitamente limitadas e não-nacionais.
 - **AC-GD-9 (FR-GD-8):** O backlog possui 7+7+8+6 tarefas completas nos Dias
   1–5 e Stretch isolado.
 

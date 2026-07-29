@@ -95,15 +95,16 @@ de saúde é chamada pelo runtime de relatório.
 
 Campos preservados antes da agregação:
 
-- SIVEP: chave de notificação, atualização, início dos sintomas, internação,
-  entrada e saída de UTI, evolução, data da evolução, UF de residência e UF de
-  internação;
-- CNES: competência, UF do estabelecimento, código/categoria de UTI e leitos
-  existentes compatíveis;
+- SIVEP: chave de notificação (única por ano), data de notificação, início dos
+  sintomas, internação, entrada e saída de UTI, evolução, data da evolução, UF de
+  residência e UF de internação; **não inclui timestamp de atualização (não existe
+  em dados públicos);**
+- CNES: competência **202606 (congelada)**, UF do estabelecimento, código/categoria
+  de UTI (allowlist exato: 61,62,63,75,76,79,80,81,82) e leitos existentes compatíveis;
 - população: ano, geografia e população oficial;
-- vacinação: campanha, imunobiológico, grupos-alvo, período, geografia de
-  residência, numerador, denominador, cobertura publicada, atualização e
-  fonte.
+- vacinação: campanha NE/CO/S/SE, imunobiológico, grupos-alvo, período, geografia de
+  residência, numerador, denominador, cobertura publicada, atualização e fonte
+  (elegível somente se publicada ≤ as_of solicitado).
 
 As UFs permanecem apenas para validar/filtrar o agregado nacional e alinhar
 residência/estabelecimento; não criam saída regional no MVP. A chave SIVEP é
@@ -111,16 +112,19 @@ usada somente antes da agregação e não aparece no DuckDB agent-facing.
 
 ### Normalization, Deduplication, and Quarantine
 
-- desconhecido, ignorado e ausente permanecem distintos de “não”;
+- desconhecido, ignorado e ausente permanecem distintos de "não";
 - valores clínicos ausentes não são imputados;
 - datas impossíveis, futuras ou com ordem inválida são anuladas ou rejeitadas
   conforme matriz de campo, sempre com código de motivo;
 - registros sem estrutura mínima vão para quarentena;
-- duplicatas usam chave de notificação, atualização mais recente, maior
-  completude e desempate estável;
+- **deduplicação SIVEP-intra-arquivo** (2025 ou 2026): `NU_NOTIFIC` é chave estável
+  dentro de um ano; não existe campo de atualização em dados públicos; múltiplos
+  registros com mesma `NU_NOTIFIC` (improvável com dados públicos anônimos) resolvem
+  por: maior completude canônica → desempate estável (hash de linha canônico);
+- **deduplicação SIVEP-inter-arquivo** (2025 ↔ 2026): `NU_NOTIFIC` não recorre
+  (zero overlap verificado); ambos arquivos são carregados conforme calendário;
 - aceites, exclusões, nulificações, quarentenas e duplicatas são contados por
   fonte, campo, métrica e motivo.
-
 ### Quality
 
 Cada métrica recebe a completude dos campos dos quais depende:
@@ -212,6 +216,20 @@ mede o volume aproximado citado pelo desafio.
 - falhas de hash, schema, cobertura e publicação;
 - benchmark com ao menos 165.000 linhas.
 
+## Fixtures and Finalization Gate
+
+**Synthetic Public Fixtures** (contract-faithful, deterministic test data):
+- Dados minimizados, permutados e gerados conformes a contratos verificados
+- Reproduzem cenários de normalização, deduplicação, invalidade e quarentena
+- Compatíveis com CC BY-ND (sem dados originais)
+- Utilizados em T-DF-2 até T-DF-6 para testes de determinismo e privacidade
+
+**Real Reduced Fixture** (raw source derivate, gate T-DF-1):
+- Snapshot anual verificado de SIVEP (minimizado conforme allowlist)
+- Estado de elegibilidade (`VERIFIED`, `PARTIAL`, `INELIGIBLE`) definido em source-contracts.md
+- Requer permissão legal explícita para redistribuição
+- Utilizado somente após resolução de todos bloqueadores de source-contracts.md
+- Spec permanece `DRAFT` enquanto fixture real estiver `UNVERIFIED`
 ## Open Questions
 
 Os recursos, códigos e metadados marcados `UNVERIFIED` no anexo são

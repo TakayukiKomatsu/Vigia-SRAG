@@ -28,6 +28,14 @@ Feature: Governança, transparência e entrega da PoC SRAG
       | métrica ausente  | seção indisponível com motivo     |
       | auditoria crítica | publicação interrompida          |
 
+  @ch-13 @ch-15 @fr-gd-1 @ac-gd-10
+  Scenario: Rejeitar observação scoped/limitada do golden run
+    Given uma execução com observação de campanha de vacinação com escopo regional
+    When o gate golden for aplicado
+    Then a métrica de vacinação deve ser marcada como limitada
+    And não deve ser elegível ao golden run
+    And deve renderizar como seção explicitamente não-nacional e limitada
+
   @ch-17 @fr-gd-3 @nfr-gd-3 @ac-gd-3
   Scenario: Reproduzir o quickstart determinístico
     Given um clone limpo e não autenticado

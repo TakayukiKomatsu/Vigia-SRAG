@@ -90,13 +90,31 @@ Feature: Métricas e gráficos epidemiológicos Brasil de SRAG
     But não deve informar ocupação de leitos
 
   @ch-07 @fr-mt-7 @ac-mt-7
-  Scenario: Selecionar cobertura oficial de influenza elegível
+  Scenario: Selecionar cobertura oficial de influenza elegível com escopo de população explícito
     Given duas observações oficiais da campanha de influenza 2026
-    And somente a primeira foi publicada até "as_of"
+    And a primeira foi publicada até "as_of" com população_scope = "NE,CO,S,SE"
+    And a segunda seria publicada após "as_of"
     When a cobertura for selecionada
     Then a primeira observação deve ser retornada
-    And campanha, grupos-alvo, numerador, denominador, atualização e fonte devem aparecer
+    And campanha, grupos-alvo, numerador, denominador, atualização, fonte e população_scope devem aparecer
+    And population_scope deve ser "NE,CO,S,SE" e nunca rotulado como "nationwide"
     And nenhuma cobertura de COVID-19 deve integrar o pacote MVP
+
+  @ch-07 @fr-mt-7 @ac-mt-7
+  Scenario: Influenza indisponível quando não publicada até "as_of"
+    Given nenhuma observação oficial da campanha de influenza 2026 foi publicada até "as_of"
+    When a cobertura for selecionada
+    Then o estado deve ser "unavailable"
+    And o motivo deve indicar "não publicada até cutoff"
+    But numerador, denominador e valor não devem ser reportados
+    And population_scope deve estar ausente ou não deve ser "BR"
+
+  @ch-07 @fr-mt-7 @ac-mt-7
+  Scenario: Observação 2026 escopo não nationwide não satisfaz golden
+    Given uma observação elegível da campanha 2026 com população_scope = "NE,CO,S,SE"
+    When o golden run exigir todas as quatro métricas e ambas as séries
+    Then a observação com escopo NE,CO,S,SE não satisfaz o requisito nationwide
+    And o golden run não passa sem uma observação nationwide futura
 
   @ch-08 @fr-mt-8 @fr-mt-10 @nfr-mt-5 @ac-mt-8
   Scenario: Produzir série e gráfico diário fiéis

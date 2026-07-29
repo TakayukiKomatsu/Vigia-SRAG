@@ -19,11 +19,12 @@ Feature: Fundação de dados públicos fixados para relatórios Brasil de SRAG
 
   @ch-10 @fr-df-3 @fr-df-4 @ac-df-3
   Scenario: Normalizar e deduplicar sem inventar valores
-    Given registros com código ignorado, data impossível e chave duplicada
+    Given registros com código ignorado, data impossível, chave duplicada, e sem campo de timestamp de atualização
     When a preparação de dados for executada
     Then o código ignorado deve permanecer desconhecido e não negativo
     And a data inválida deve seguir a matriz de campo e possuir código de motivo
-    And deve vencer a atualização mais recente, depois a maior completude e o desempate estável
+    And duplicatas resolvem por: maior completude canônica → desempate estável (hash de linha)
+    And não deve buscar campo de atualização (DT_DIGITA é inserção, não update)
     And exclusões e duplicatas devem ser contabilizadas
 
   @ch-10 @fr-df-4 @ac-df-3
@@ -76,3 +77,13 @@ Feature: Fundação de dados públicos fixados para relatórios Brasil de SRAG
     When o benchmark de preparação for executado
     Then a execução deve concluir sem perda silenciosa
     And deve registrar tempo, pico de memória e contexto da máquina
+
+  @ch-10 @ch-12 @fr-df-1 @fr-df-2 @ac-df-1 @ac-df-2
+  Scenario: Diferenciar fixtures sintéticas e reais
+    Given fixtures sintéticas (determinísticas, minimizadas, conformes a contratos)
+    And fixture real reduzida (minimização SIVEP com estado de elegibilidade explícito)
+    When testes de T-DF-2 até T-DF-6 forem executados
+    Then sintéticas devem ser utilizadas para reproduzibilidade e testes de privacidade
+    And real-fixture deve permanecer bloqueada até resolução de ALL bloqueadores em source-contracts.md
+    And spec permanece "DRAFT" enquanto real-fixture estiver "UNVERIFIED"
+    And nenhuma inferência completa bloqueadores; fonte e bloqueador permanecem visíveis

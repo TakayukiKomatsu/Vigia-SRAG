@@ -35,8 +35,10 @@ enganoso. O LLM não participa dos cálculos.
   por paciente-dias SIVEP sobre leito-dias CNES compatíveis.
 - **FR-MT-6:** Calcular a proporção suplementar de internações SRAG com uso de
   UTI, sem rotulá-la como ocupação.
-- **FR-MT-7:** Selecionar a observação oficial mais recente da cobertura da
-  campanha de influenza 2026 para a população-alvo, publicada até `as_of`.
+- **FR-MT-7:** Selecionar a observação oficial mais recente da campanha de
+  influenza 2026 para a população-alvo, com escopo de população explícito e
+  publicada até `as_of`; se não publicada no cutoff, resultado indisponível com
+  motivo estruturado.
 - **FR-MT-8:** Produzir série diária de 30 dias encerrada em `as_of`, marcando
   os 14 dias mais recentes como provisórios.
 - **FR-MT-9:** Produzir série dos 12 meses-calendário completos anteriores ao
@@ -148,8 +150,6 @@ de UTI”. O relatório declara que não é ocupação observada por todas as ca
 Resultado acima de 100% fica `unavailable` por incompatibilidade; não é
 truncado nem publicado como percentual válido.
 
-## Required Vaccination Metric
-
 ```text
 influenza_coverage =
   valid_influenza_doses_for_target_groups
@@ -160,6 +160,15 @@ Usa a observação oficial mais recente da campanha 2026 publicada até `as_of`.
 Preserva campanha, grupos-alvo, residência, numerador, denominador, cobertura
 publicada, atualização e fonte. Não usa população geral inventada nem
 reconstrói esquemas a partir do SIVEP.
+
+Cada observação inclui um campo explícito `population_scope` que identifica as
+regiões de cobertura (p. ex.: `NE,CO,S,SE` para a campanha de março–maio de
+2026; `N` para a campanha do segundo semestre). Observações com escopo menor
+que Brasil inteiro nunca recebem rótulo "nationwide" e não satisfazem golden.
+
+Se nenhuma observação elegível foi publicada até `as_of`, o resultado fica
+`unavailable` com `reason` estruturado indicando "não publicada até cutoff".
+Neste caso, numerador e denominador não são reportados.
 
 ## Series and Charts
 
@@ -219,8 +228,9 @@ determinístico; o LLM recebe somente resultados agregados validados.
 - **AC-MT-5 (FR-MT-5):** Pressão UTI usa paciente-dias/leito-dias compatíveis,
   rótulo/limitação corretos e rejeita valor acima de 100%.
 - **AC-MT-6 (FR-MT-6):** Uso de UTI aparece apenas como proporção suplementar.
-- **AC-MT-7 (FR-MT-7):** Influenza usa a observação oficial elegível e seu
-  público-alvo.
+- **AC-MT-7 (FR-MT-7):** Influenza usa a observação oficial elegível com
+  população-alvo definida e escopo de população explícito; indisponível se não
+  publicada até `as_of` com motivo estruturado.
 - **AC-MT-8 (FR-MT-8, NFR-MT-5):** Série/gráfico diário têm 30 pontos fiéis e
   14 provisórios.
 - **AC-MT-9 (FR-MT-9, NFR-MT-5):** Série/gráfico mensal têm 12 meses completos

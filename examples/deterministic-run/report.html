@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relatório Brasil de SRAG — 2026-07-28</title>
+<style>
+body{
+  font-family:system-ui,sans-serif;max-width:1120px;margin:auto;
+  padding:2rem;color:#18212b
+}
+header{border-bottom:4px solid #0072b2}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem}
+.metric,figure,section{border:1px solid #ccd5df;border-radius:.4rem;padding:1rem}
+.value{font-size:1.5rem;font-weight:700}
+.limited{background:#fff3cd;border-left:4px solid #e69f00;padding:.6rem}
+img{max-width:100%;height:auto}
+a{color:#005ea8}
+@media(max-width:720px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><h1>Relatório epidemiológico de SRAG — Brasil</h1>
+<p><strong>Modo: deterministic</strong>
+(demonstração não-live).</p>
+<p>generated_at: 2026-07-28T12:00:00+00:00 |
+as_of: 2026-07-28 |
+run_id: deterministic-run</p></header>
+<main>
+<section><h2>Métricas e indicadores</h2><div class="grid">
+    <article class="metric" data-metric-id="case_growth">
+      <h3>Taxa de aumento de casos</h3>
+      <p class="value">0 %</p>
+      <p>Período: 2026-07-05 a 2026-07-11</p>
+      <p>Estado: available | Qualidade: available</p>
+      <ul><li>Casos na semana de referência: 7; semana anterior: 7.</li></ul>
+    </article>
+    <article class="metric" data-metric-id="mortality_per_100k">
+      <h3>Taxa de mortalidade por SRAG</h3>
+      <p class="value">0 óbitos por 100 mil habitantes</p>
+      <p>Período: 2026-06-14 a 2026-07-11</p>
+      <p>Estado: available | Qualidade: available</p>
+      <ul></ul>
+    </article>
+    <article class="metric" data-metric-id="hospital_cfr">
+      <h3>Letalidade hospitalar suplementar por SRAG</h3>
+      <p class="value">7.14 %</p>
+      <p>Período: 2026-05-31 a 2026-06-27</p>
+      <p>Estado: available | Qualidade: available</p>
+      <ul><li>0 internações com evolução desconhecida foram excluídas.</li></ul>
+    </article>
+    <article class="metric" data-metric-id="icu_pressure">
+      <h3>Pressão estimada de SRAG sobre a capacidade registrada de UTI</h3>
+      <p class="value">1 %</p>
+      <p>Período: 2026-06-01 a 2026-06-30</p>
+      <p>Estado: available | Qualidade: available</p>
+      <ul><li>Não é ocupação observada por todas as causas; usa capacidade CNES registrada.</li><li>0 permanências sem saída conhecida foram excluídas.</li></ul>
+    </article>
+    <article class="metric" data-metric-id="icu_use">
+      <h3>Uso de UTI entre hospitalizações por SRAG — indicador suplementar</h3>
+      <p class="value">32.14 %</p>
+      <p>Período: 2026-06-14 a 2026-07-11</p>
+      <p>Estado: available | Qualidade: available</p>
+      <ul><li>Indicador de uso entre casos SRAG; não representa ocupação de leitos.</li></ul>
+    </article>
+    <article class="metric" data-metric-id="influenza_coverage">
+      <h3>Cobertura vacinal contra influenza 2026</h3>
+      <p class="value">61.7 %</p>
+      <p>Período: 2026-03-01 a 2026-05-31</p>
+      <p>Estado: available | Qualidade: available</p>
+      <p class="limited"><strong>Escopo limitado:</strong> CO, NE, S, SE. Não representa Brasil inteiro.</p><ul><li>Cobertura de escopo regional; não representa cobertura nacional.</li></ul>
+    </article></div></section>
+<section><h2>Séries e gráficos</h2><figure><img src="charts/daily-cases.svg" alt="Gráfico da série Casos diários de SRAG — Brasil, com 30 pontos de 2026-06-29 a 2026-07-28, em casos. Fonte: sivep. Watermark: 2026-07-28."><figcaption>Casos diários de SRAG — Brasil — 2026-06-29 a 2026-07-28. Fonte: sivep; watermark: 2026-07-28.</figcaption></figure><figure><img src="charts/monthly-cases.svg" alt="Gráfico da série Casos mensais de SRAG — Brasil, com 12 pontos de 2025-07-01 a 2026-06-30, em casos. Fonte: sivep. Watermark: 2026-07-28."><figcaption>Casos mensais de SRAG — Brasil — 2025-07-01 a 2026-06-30. Fonte: sivep; watermark: 2026-07-28.</figcaption></figure></section>
+<section><h2>Notícias recentes validadas</h2><ul><li><a href="https://agenciabrasil.ebc.com.br/saude/noticia/demo" rel="noopener noreferrer">Boletim sintético de SRAG para demonstração não-live</a> — Agência Brasil, 2026-07-27</li></ul></section>
+<section><h2>Comentário fundamentado</h2><p class="limited">Comentário factual determinístico usado após falha/rejeição da OpenAI.</p><ul><li>Taxa de aumento de casos: 0 %. <small>[metric:case_growth]</small></li><li>Taxa de mortalidade por SRAG: 0 óbitos por 100 mil habitantes. <small>[metric:mortality_per_100k]</small></li><li>Letalidade hospitalar suplementar por SRAG: 7.14 %. <small>[metric:hospital_cfr]</small></li><li>Pressão estimada de SRAG sobre a capacidade registrada de UTI: 1 %. <small>[metric:icu_pressure]</small></li><li>Uso de UTI entre hospitalizações por SRAG — indicador suplementar: 32.14 %. <small>[metric:icu_use]</small></li><li>Cobertura vacinal contra influenza 2026: 61.7 %. <small>[metric:influenza_coverage]</small></li></ul>
+<p>Modelo solicitado: fake-requested;
+servido: fallback.</p></section>
+<section><h2>Qualidade, métodos e fontes</h2><h3>Watermarks</h3><ul><li>CNES: 2026-07-28</li><li>IBGE: 2026-07-28</li><li>PNI: 2026-07-28</li><li>SIVEP-Gripe: 2026-07-28</li></ul>
+<h3>Métodos</h3><ul><li>case_growth: case_growth_v1; fontes sivep</li><li>mortality_per_100k: mortality_per_100k_v1; fontes sivep, ibge</li><li>hospital_cfr: hospital_cfr_v1; fontes sivep</li><li>icu_pressure: icu_pressure_v1; fontes sivep, cnes</li><li>icu_use: icu_use_v1; fontes sivep</li><li>influenza_coverage: influenza_coverage_v1; fontes pni</li></ul><p>Fontes: CNES, IBGE, PNI, SIVEP-Gripe.</p>
+<p>Este relatório demonstra uma PoC de dados públicos. Não oferece diagnóstico,
+previsão ou recomendação clínica.</p></section>
+</main></body></html>

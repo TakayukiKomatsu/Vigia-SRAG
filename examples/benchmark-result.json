@@ -1,0 +1,25 @@
+{
+  "recorded_at": "2026-07-28",
+  "machine": {
+    "os": "Darwin 25.5.0 arm64",
+    "cpu": "Apple M4",
+    "python": "3.12"
+  },
+  "sivep_ingestion": {
+    "fixture": "synthetic semicolon-delimited CSV with 165000 unique valid SIVEP rows",
+    "rows": 165000,
+    "accepted": 165000,
+    "wall_seconds": 3.23,
+    "maximum_resident_bytes": 57229312,
+    "output_sha256": "21aafd1ea80d86d3ed70e93491b16bb51398cc2c6f7ddbb9fca1c2123c791620"
+  },
+  "complete_metric_package": {
+    "fixture": "deterministic demo DuckDB snapshot",
+    "metrics": 6,
+    "series": 2,
+    "function_elapsed_seconds": 0.03713824995793402,
+    "process_wall_seconds": 0.14,
+    "maximum_resident_bytes": 64389120,
+    "required_max_seconds": 5.0
+  }
+}
