@@ -1,67 +1,78 @@
-@final @data-foundation
-Feature: Fundação de dados públicos para relatórios de SRAG
-  Os cenários derivam do spec.md versão 1.0.
+@draft @data-foundation
+Feature: Fundação de dados públicos fixados para relatórios Brasil de SRAG
+  Os cenários derivam do spec.md versão 2.0.
 
-  @fr-df-1 @ac-df-1
-  Scenario: Produzir o mesmo contrato a partir de fonte ao vivo ou snapshot local
-    Given que uma fonte ao vivo e um arquivo local possuem conteúdo equivalente
-    When o operador executar a ingestão em cada modo
-    Then os dois resultados devem possuir o mesmo schema canônico
-    And as tabelas normalizadas devem possuir conteúdo equivalente
-    And cada manifesto deve identificar o modo e a origem utilizados
+  @ch-10 @ch-12 @fr-df-1 @nfr-df-2 @ac-df-1
+  Scenario: Bloquear finalização sem contratos e fixture verificados
+    Given que uma das quatro fontes possui metadado ou recurso não verificado
+    When a prontidão do SDD for avaliada
+    Then o spec deve permanecer com status "DRAFT"
+    And o bloqueio e sua evidência devem constar no anexo de contratos
+    But nenhum valor pode ser inferido para completar o contrato
 
-  @fr-df-2 @fr-df-7 @ac-df-2
-  Scenario: Tratar códigos ignorados e registros inválidos sem inventar valores
-    Given um arquivo SRAG com código ignorado, data impossível e UF inválida
-    When a ingestão for executada
-    Then o código ignorado deve ser normalizado como desconhecido
-    And não deve ser normalizado como resposta negativa
-    And a data inválida deve ser contabilizada pelo código de qualidade correspondente
-    And o registro com UF inválida deve ser enviado para quarentena
+  @ch-10 @fr-df-2 @ac-df-2
+  Scenario: Carregar somente snapshots oficiais fixados
+    Given recursos locais verificados de SIVEP 2025 e 2026, CNES, IBGE e PNI influenza 2026
+    When a preparação de dados for executada
+    Then cada saída deve identificar recurso, recuperação, watermark e SHA-256
+    And nenhuma fonte de saúde deve ser consultada ao vivo pelo runtime do relatório
 
-  @fr-df-3 @ac-df-3
-  Scenario: Deduplicar registros segundo precedência documentada
-    Given dois registros com a mesma chave técnica e atualizações diferentes
-    When a ingestão for executada
-    Then somente o registro vencedor pela regra de precedência deve permanecer
-    And o manifesto deve contabilizar uma duplicata removida
+  @ch-10 @fr-df-3 @fr-df-4 @ac-df-3
+  Scenario: Normalizar e deduplicar sem inventar valores
+    Given registros com código ignorado, data impossível e chave duplicada
+    When a preparação de dados for executada
+    Then o código ignorado deve permanecer desconhecido e não negativo
+    And a data inválida deve seguir a matriz de campo e possuir código de motivo
+    And deve vencer a atualização mais recente, depois a maior completude e o desempate estável
+    And exclusões e duplicatas devem ser contabilizadas
 
-  @fr-df-4 @nfr-df-3 @ac-df-4
-  Scenario: Minimizar dados antes do consumo pelo agente
-    Given um arquivo bruto que contém colunas identificáveis e colunas analíticas
-    When o snapshot for publicado
-    Then as tabelas analíticas devem conter somente campos da allowlist canônica
-    And nenhum nome, documento ou endereço deve estar presente
+  @ch-10 @fr-df-4 @ac-df-3
+  Scenario: Quarentenar somente falhas estruturais
+    Given um registro sem estrutura mínima e outro com campo não crítico inválido
+    When a preparação de dados for executada
+    Then o registro estrutural deve ir para quarentena
+    And o campo não crítico deve ser anulado quando a matriz assim determinar
+    And ambos os motivos devem ser contabilizados separadamente
 
-  @fr-df-5 @fr-df-6 @ac-df-5
-  Scenario: Publicar snapshot reproduzível
-    Given que todas as fontes mínimas satisfazem seus contratos
-    When a ingestão terminar
-    Then devem existir arquivos Parquet normalizados
-    And deve existir um banco DuckDB analítico
-    And o manifesto deve ser escrito com status "published"
-    And hashes, contagens, schemas e watermarks devem ser verificáveis
+  @ch-15 @fr-df-5 @nfr-df-3 @ac-df-4
+  Scenario: Minimizar antes da fronteira agentiva
+    Given entradas que contêm chaves técnicas e campos clínicos linha a linha
+    When o DuckDB analítico for publicado
+    Then nenhuma chave técnica ou linha clínica deve estar disponível ao agente
+    And somente agregados e metadados permitidos devem atravessar a fronteira
 
-  @fr-df-8 @nfr-df-4 @ac-df-6
-  Scenario: Preservar último snapshot após falha estrutural
-    Given que existe um snapshot publicado
-    And a nova fonte não contém uma coluna crítica
-    When o operador tentar atualizar os dados
-    Then a execução deve falhar com código de schema incompatível
-    And nenhum snapshot parcial deve ser publicado
-    And o snapshot anterior deve continuar selecionável
+  @ch-02 @ch-12 @ch-16 @fr-df-6 @nfr-df-1 @nfr-df-2 @ac-df-5
+  Scenario: Publicar DuckDB e manifestos determinísticos
+    Given entradas idênticas e as mesmas versões de regra
+    When duas preparações forem concluídas
+    Then o DuckDB deve ser consultável somente leitura
+    And o conteúdo normalizado e seus hashes devem ser idênticos
+    And timestamps de execução não devem alterar os hashes analíticos
 
-  @fr-df-6 @ac-df-7
-  Scenario: Expor qualidade e atualização de todas as famílias de dados
-    Given uma ingestão concluída com dados SRAG, CNES, influenza e COVID-19
-    When o manifesto for consultado
-    Then ele deve informar o watermark de cada família
-    And deve informar completude dos campos críticos
-    And deve informar quantidades aceitas, rejeitadas e deduplicadas
+  @ch-10 @ch-13 @fr-df-7 @ac-df-6
+  Scenario Outline: Aplicar o estado de completude
+    Given uma métrica com "<completeness>" por cento de campos dependentes válidos
+    When sua qualidade for avaliada
+    Then seu estado deve ser "<state>"
 
-  @nfr-df-2 @ac-df-8
-  Scenario: Produzir hashes determinísticos para entradas idênticas
-    Given entradas idênticas e a mesma versão das regras de normalização
-    When a ingestão for executada duas vezes
-    Then os hashes das tabelas normalizadas devem ser idênticos
-    And timestamps de execução não devem alterar o conteúdo normalizado
+    Examples:
+      | completeness | state       |
+      | 95           | available   |
+      | 80           | warning     |
+      | 65           | unavailable |
+
+  @ch-10 @ch-13 @fr-df-7 @fr-df-8 @ac-df-6 @ac-df-7
+  Scenario: Bloqueio estrutural sobrepor porcentagem
+    Given um último snapshot válido
+    And um candidato com 95 por cento de completude e coluna crítica ausente
+    When a publicação for tentada
+    Then o candidato deve ser rejeitado por schema incompatível
+    And nenhum snapshot parcial deve ser selecionado
+    And o último snapshot válido deve permanecer selecionável
+
+  @ch-10 @ch-16 @ch-19 @nfr-df-4 @ac-df-8
+  Scenario: Medir o volume representativo
+    Given uma entrada SIVEP com pelo menos 165000 linhas
+    When o benchmark de preparação for executado
+    Then a execução deve concluir sem perda silenciosa
+    And deve registrar tempo, pico de memória e contexto da máquina

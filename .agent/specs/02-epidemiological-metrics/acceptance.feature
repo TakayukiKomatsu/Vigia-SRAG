@@ -1,121 +1,139 @@
-@final @metrics
-Feature: Métricas e gráficos epidemiológicos de SRAG
-  Os cenários derivam do spec.md versão 1.0.
+@draft @metrics
+Feature: Métricas e gráficos epidemiológicos Brasil de SRAG
+  Os cenários derivam do spec.md versão 2.0.
 
   Background:
-    Given que existe um snapshot canônico publicado
+    Given que existe um snapshot canônico Brasil com contratos verificados
 
-  @fr-mt-1 @ac-mt-1
-  Scenario Outline: Calcular pacote para geografia suportada
-    When o pacote for solicitado para "<geography>" em uma data coberta
-    Then todas as saídas devem identificar "<geography>"
-    And todas as saídas devem identificar o snapshot e a data de referência
+  @ch-13 @fr-mt-1 @ac-mt-1
+  Scenario: Derivar a data de referência e os cutoffs
+    Given que a maior data válida de início dos sintomas é 2026-07-28
+    When o pacote for solicitado sem data de referência
+    Then "as_of" deve ser 2026-07-28
+    And "generated_at" deve ser registrado separadamente em UTC
+    And a semana de referência deve terminar em um sábado pelo menos 14 dias antes
+    And a coorte de letalidade deve terminar pelo menos 28 dias antes
+
+  @ch-13 @fr-mt-1 @ac-mt-1
+  Scenario: Rejeitar data posterior ao watermark
+    Given que a maior data válida de início dos sintomas é 2026-07-28
+    When o pacote for solicitado para 2026-07-29
+    Then a solicitação deve falhar antes de calcular métricas
+    And nenhuma substituição silenciosa de data deve ocorrer
+
+  @ch-04 @fr-mt-2 @nfr-mt-1 @ac-mt-2
+  Scenario: Calcular aumento com numerador correto
+    Given 100 casos na semana epidemiológica anterior
+    And 125 casos na semana epidemiológica de referência
+    When o aumento for calculado
+    Then o valor deve ser 25 por cento
+    And "previous_cases" deve ser 100
+    And "current_cases" deve ser 125
+    And "numerator" e "delta_cases" devem ser 25
+
+  @ch-04 @fr-mt-2 @ac-mt-2
+  Scenario Outline: Tratar denominador zero sem infinito
+    Given "<previous>" casos na semana anterior
+    And "<current>" casos na semana de referência
+    When o aumento for calculado
+    Then o estado deve ser "<state>"
+    And o valor deve ser "<value>"
 
     Examples:
-      | geography |
-      | BR        |
-      | SP        |
+      | previous | current | state        | value       |
+      | 0        | 0       | stable_zero  | 0           |
+      | 0        | 4       | new_activity | unavailable |
 
-  @fr-mt-1 @ac-mt-1
-  Scenario: Rejeitar UF inválida
-    When o pacote for solicitado para "XX"
-    Then a solicitação deve falhar antes de consultar métricas
-    And nenhuma substituição silenciosa por Brasil deve ocorrer
+  @ch-05 @fr-mt-3 @ac-mt-3
+  Scenario: Calcular mortalidade populacional por SRAG
+    Given 20 óbitos por SRAG nas quatro semanas estabilizadas
+    And 3 óbitos por outra causa no mesmo período
+    And população oficial de 1000000 habitantes
+    When a mortalidade for calculada
+    Then o valor deve ser 2 óbitos por 100 mil habitantes
+    And o numerador deve ser 20
+    And o denominador deve ser 1000000
+    And os óbitos por outra causa devem ser excluídos
 
-  @fr-mt-2 @ac-mt-2
-  Scenario: Calcular aumento com denominador positivo
-    Given que houve 100 casos nos sete dias anteriores
-    And houve 125 casos nos sete dias atuais
-    When a taxa de aumento for calculada
-    Then o valor deve ser 25 por cento
-    And o estado deve ser "available"
-
-  @fr-mt-2 @ac-mt-2
-  Scenario: Representar ausência contínua de casos
-    Given que houve zero casos nas duas janelas de sete dias
-    When a taxa de aumento for calculada
-    Then o valor deve ser zero por cento
-    And o estado deve ser "stable_zero"
-
-  @fr-mt-2 @ac-mt-2
-  Scenario: Não produzir infinito quando surgem casos
-    Given que houve zero casos na janela anterior
-    And houve casos na janela atual
-    When a taxa de aumento for calculada
-    Then nenhum percentual infinito deve ser retornado
-    And o estado deve ser "new_activity"
-
-  @fr-mt-3 @ac-mt-3
-  Scenario: Calcular letalidade somente com evoluções conhecidas
-    Given 10 óbitos, 90 altas e 20 evoluções desconhecidas
+  @fr-mt-4 @ac-mt-4
+  Scenario: Calcular letalidade hospitalar suplementar
+    Given 10 óbitos, 90 altas e 20 evoluções desconhecidas na coorte madura
     When a letalidade for calculada
     Then o valor deve ser 10 por cento
-    And a qualidade deve informar 20 exclusões por evolução desconhecida
-    And a definição deve identificar letalidade hospitalar
+    And 20 evoluções desconhecidas devem ser expostas como exclusões
+    And o rótulo deve informar "letalidade hospitalar suplementar"
 
-  @fr-mt-4 @fr-mt-10 @ac-mt-4
-  Scenario: Calcular ocupação estimada de UTI por SRAG
-    Given 150 paciente-dias válidos de SRAG em UTI
-    And 1000 leito-dias compatíveis do CNES
-    When a ocupação for calculada
+  @ch-06 @fr-mt-5 @ac-mt-5
+  Scenario: Calcular pressão estimada de SRAG sobre UTI
+    Given 150 paciente-dias SRAG válidos
+    And 1000 leito-dias CNES compatíveis existentes
+    When a pressão de UTI for calculada
     Then o valor deve ser 15 por cento
-    And o numerador deve ser 150 paciente-dias
-    And o denominador deve ser 1000 leito-dias
-    And a proporção de uso de UTI não deve substituir esse resultado
+    And o rótulo deve informar "pressão estimada de SRAG sobre a capacidade registrada de UTI"
+    And a limitação deve negar ocupação observada por todas as causas
 
-  @fr-mt-4 @fr-mt-10 @ac-mt-4
-  Scenario: Não chamar proporção de uso de UTI de ocupação
-    Given que existem registros de uso de UTI
-    And não existe capacidade CNES compatível
-    When o pacote for calculado
-    Then a ocupação deve estar indisponível com motivo
-    And a proporção de uso pode aparecer como indicador auxiliar
-    But ela não deve possuir o rótulo de ocupação de leitos
+  @ch-06 @ch-13 @fr-mt-5 @ac-mt-5
+  Scenario: Tornar incompatibilidade acima de 100 por cento indisponível
+    Given 1100 paciente-dias SRAG válidos
+    And 1000 leito-dias CNES compatíveis existentes
+    When a pressão de UTI for calculada
+    Then o estado deve ser "unavailable"
+    And o motivo deve indicar incompatibilidade de numerador e denominador
+    But 110 por cento não deve ser publicado como valor válido
 
-  @fr-mt-5 @ac-mt-5
-  Scenario: Exibir as duas coberturas sem combiná-las
-    Given cobertura válida de influenza para sua população-alvo
-    And cobertura válida de COVID-19 para seu esquema e população elegível
-    When o pacote for calculado
-    Then devem existir indicadores independentes de influenza e COVID-19
-    And cada indicador deve conter período, público-alvo, numerador, denominador e fonte
-    And nenhuma média entre as coberturas deve ser calculada
+  @fr-mt-6 @ac-mt-6
+  Scenario: Manter uso de UTI como indicador suplementar
+    Given 30 internações com uso de UTI entre 100 com estado conhecido
+    When o uso de UTI for calculado
+    Then o valor deve ser 30 por cento
+    And o rótulo deve informar proporção suplementar
+    But não deve informar ocupação de leitos
 
-  @fr-mt-5 @ac-mt-5
-  Scenario: Manter uma cobertura quando a outra está ausente
-    Given cobertura válida de influenza
-    And nenhuma cobertura aplicável de COVID-19
-    When o pacote for calculado
-    Then influenza deve permanecer disponível
-    And COVID-19 deve estar indisponível com motivo
+  @ch-07 @fr-mt-7 @ac-mt-7
+  Scenario: Selecionar cobertura oficial de influenza elegível
+    Given duas observações oficiais da campanha de influenza 2026
+    And somente a primeira foi publicada até "as_of"
+    When a cobertura for selecionada
+    Then a primeira observação deve ser retornada
+    And campanha, grupos-alvo, numerador, denominador, atualização e fonte devem aparecer
+    And nenhuma cobertura de COVID-19 deve integrar o pacote MVP
 
-  @fr-mt-6 @fr-mt-7 @ac-mt-6
-  Scenario: Produzir séries temporais completas
-    Given que o snapshot cobre os últimos 12 meses
-    When as séries forem calculadas
-    Then a série diária deve conter exatamente 30 datas consecutivas
-    And a série mensal deve conter exatamente 12 meses consecutivos
-    And períodos cobertos sem casos devem possuir valor zero
+  @ch-08 @fr-mt-8 @fr-mt-10 @nfr-mt-5 @ac-mt-8
+  Scenario: Produzir série e gráfico diário fiéis
+    Given que o snapshot cobre os 30 dias encerrados em "as_of"
+    When a série diária for calculada e renderizada
+    Then deve conter exatamente 30 datas consecutivas terminando em "as_of"
+    And exatamente os 14 pontos mais recentes devem estar provisórios
+    And dias cobertos sem casos devem possuir zero
+    And cada ponto do gráfico deve corresponder à série
+    And o gráfico deve conter título, período, unidade, fonte, watermark e descrição
 
-  @fr-mt-6 @fr-mt-7 @ac-mt-9
-  Scenario: Não preencher período fora da cobertura do snapshot
-    Given que o snapshot cobre somente 15 dos últimos 30 dias
-    When as séries forem calculadas
-    Then a série diária deve estar indisponível com motivo de cobertura insuficiente
-    And pontos fora do watermark não devem receber valor zero
-    And o renderer não deve produzir o gráfico diário com pontos artificiais
+  @ch-09 @fr-mt-9 @fr-mt-10 @nfr-mt-5 @ac-mt-9
+  Scenario: Produzir série e gráfico mensal fiéis
+    Given que o snapshot cobre os 12 meses completos anteriores
+    When a série mensal for calculada e renderizada
+    Then deve conter exatamente os 12 meses-calendário completos anteriores ao mês de "as_of"
+    And meses cobertos sem casos devem possuir zero
+    And cada ponto do gráfico deve corresponder à série
 
-  @fr-mt-8 @ac-mt-7
-  Scenario: Retornar proveniência e qualidade para cada métrica
-    When um pacote de métricas for calculado
-    Then cada métrica deve informar fórmula e versão
-    And deve informar snapshot, período e geografia
-    And deve informar numerador, denominador e qualidade quando disponível
-    And deve informar motivo estruturado quando indisponível
+  @ch-10 @ch-13 @fr-mt-10 @nfr-mt-2 @ac-mt-10
+  Scenario Outline: Propagar qualidade e proveniência
+    Given completude "<completeness>" sem falha estrutural
+    When uma métrica for empacotada
+    Then o estado de qualidade deve ser "<state>"
+    And fórmula, período, snapshot, watermark e fontes devem estar presentes
 
-  @fr-mt-9 @nfr-mt-5 @ac-mt-8
-  Scenario: Gerar gráficos fiéis às séries
-    When os gráficos forem renderizados
-    Then devem existir um gráfico diário e um mensal
-    And cada ponto desenhado deve corresponder à série estruturada
-    And cada gráfico deve conter título, período, unidade, fonte e descrição textual
+    Examples:
+      | completeness | state       |
+      | 95           | available   |
+      | 80           | warning     |
+      | 65           | unavailable |
+
+  @ch-02 @ch-16 @nfr-mt-1 @nfr-mt-3 @nfr-mt-4 @ac-mt-11
+  Scenario: Executar o pacote deterministicamente e somente leitura
+    Given uma fixture conhecida e uma conexão DuckDB somente leitura
+    When a fixture conhecida for calculada duas vezes
+    Then os resultados analíticos devem ser idênticos
+    And nenhuma consulta deve escrever no DuckDB
+    And nenhum cálculo deve ser delegado ao LLM
+    And cada execução deve concluir em até 5 segundos no ambiente documentado

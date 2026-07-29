@@ -1,24 +1,11 @@
-# Tarefas — Fundação de dados SRAG
+# Tarefas — Fundação de dados SRAG v2
 
-> Derivado de spec.md versão 1.0
+> Must: 7 tarefas. Todas no Dia 1. Stretch fica em `../stretch-backlog.md`.
 
-## Preparação
-
-- [ ] **T-DF-1 [FR-DF-1, FR-DF-8]:** Validar distribuições oficiais atuais, dicionários e termos de uso do SIVEP-Gripe, CNES, influenza e COVID-19; registrar URLs e contratos em configuração versionada.
-- [ ] **T-DF-2 [FR-DF-2, FR-DF-4]:** Definir schema canônico v1 e allowlist de campos com matriz de códigos, datas e nulabilidade.
-
-## Implementação
-
-- [ ] **T-DF-3 [FR-DF-1]:** Implementar interface de fonte e adaptadores live/local com download temporário, limites, hash e metadados.
-- [ ] **T-DF-4 [FR-DF-2, FR-DF-7]:** Implementar normalização, validação, códigos de rejeição e quarentena.
-- [ ] **T-DF-5 [FR-DF-3]:** Implementar deduplicação SIVEP-Gripe e contadores de precedência.
-- [ ] **T-DF-6 [FR-DF-4, NFR-DF-3]:** Projetar dados para tabelas minimizadas e comprovar ausência de campos proibidos.
-- [ ] **T-DF-7 [FR-DF-5]:** Materializar Parquet e construir DuckDB analítico em diretório imutável.
-- [ ] **T-DF-8 [FR-DF-6]:** Gerar manifesto por último, com hashes, schemas, watermarks, qualidade e versões.
-- [ ] **T-DF-9 [FR-DF-8, NFR-DF-4]:** Implementar publicação atômica e seleção/rollback para o último snapshot válido.
-
-## Verificação
-
-- [ ] **T-DF-10 [AC-DF-1, AC-DF-2, AC-DF-3]:** Criar fixtures mínimas e verificar equivalência live/local, normalização, quarentena e deduplicação.
-- [ ] **T-DF-11 [AC-DF-4, AC-DF-5, AC-DF-7, AC-DF-8]:** Verificar allowlist, hashes determinísticos, tabelas, watermarks e métricas de qualidade do snapshot publicado.
-- [ ] **T-DF-12 [AC-DF-6]:** Simular fonte truncada e schema incompatível; confirmar ausência de publicação parcial e preservação do snapshot anterior.
+- [ ] **T-DF-1 [P0, D1, CH-10, CH-12, FR-DF-1, NFR-DF-2, AC-DF-1, depends: none]:** Verificar os quatro contratos oficiais e derivar uma fixture real reduzida permitida; manter o gate bloqueado para qualquer campo não verificado. **Evidence:** `source-contracts.md`, hashes e relatório de verificação da fixture.
+- [ ] **T-DF-2 [P0, D1, CH-10, CH-15, FR-DF-2, FR-DF-3, AC-DF-2, AC-DF-3, depends: T-DF-1]:** Congelar schema canônico, matriz de códigos/campos, semântica temporal/geográfica e allowlist de minimização. **Evidence:** contratos versionados e testes de schema.
+- [ ] **T-DF-3 [P0, D1, CH-10, FR-DF-3, FR-DF-4, AC-DF-3, depends: T-DF-2]:** Implementar parsers fixados, normalização, deduplicação, nulificação, códigos de motivo e quarentena. **Evidence:** fixtures e testes de precedência/invalidade verdes.
+- [ ] **T-DF-4 [P0, D1, CH-02, CH-15, FR-DF-5, FR-DF-6, NFR-DF-3, AC-DF-4, AC-DF-5, depends: T-DF-3]:** Materializar tabelas minimizadas e DuckDB somente leitura sem campos proibidos. **Evidence:** schema DuckDB, teste de acesso e varredura de privacidade.
+- [ ] **T-DF-5 [P0, D1, CH-10, CH-12, CH-13, FR-DF-6, FR-DF-7, FR-DF-8, AC-DF-5, AC-DF-6, AC-DF-7, depends: T-DF-3, T-DF-4]:** Implementar manifestos, qualidade, bloqueios estruturais e publicação atômica. **Evidence:** manifestos conhecidos e testes de falha/preservação verdes.
+- [ ] **T-DF-6 [P1, D1, CH-10, CH-13, CH-16, FR-DF-2, FR-DF-3, FR-DF-4, FR-DF-5, FR-DF-6, FR-DF-7, FR-DF-8, NFR-DF-1, NFR-DF-2, NFR-DF-3, AC-DF-2, AC-DF-3, AC-DF-4, AC-DF-5, AC-DF-6, AC-DF-7, depends: T-DF-5]:** Cobrir contratos, determinismo, integração, privacidade e falhas sem rede no CI. **Evidence:** suíte de dados verde.
+- [ ] **T-DF-7 [P1, D1, CH-10, CH-12, CH-16, CH-19, FR-DF-1, FR-DF-8, NFR-DF-4, AC-DF-1, AC-DF-7, AC-DF-8, depends: T-DF-6]:** Executar benchmark representativo e registrar a evidência do gate de finalização sem promover status indevidamente. **Evidence:** benchmark de 165000+ linhas e decisão de gate registrada.

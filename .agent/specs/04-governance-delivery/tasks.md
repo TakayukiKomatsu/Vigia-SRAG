@@ -1,28 +1,10 @@
-# Tarefas — Governança, transparência e entrega
+# Tarefas — Governança e entrega v2
 
-> Derivado de spec.md versão 1.0
+> Must: 6 tarefas. Dias 4 e 5. Stretch fica em `../stretch-backlog.md`.
 
-## Preparação
-
-- [ ] **T-GD-1 [FR-GD-1..FR-GD-4]:** Definir schema versionado, criticidade e allowlist de payload para cada evento de auditoria.
-- [ ] **T-GD-2 [FR-GD-6, FR-GD-7]:** Definir sumário do README e inventário obrigatório do diagrama/PDF.
-
-## Implementação
-
-- [ ] **T-GD-3 [FR-GD-1, FR-GD-2]:** Implementar run context e store append-only com timestamps, versões e hashes.
-- [ ] **T-GD-4 [FR-GD-3, NFR-GD-2]:** Implementar sanitização por allowlist e assertions contra PII/segredos.
-- [ ] **T-GD-5 [FR-GD-4]:** Implementar consulta e verificação de integridade por run ID.
-- [ ] **T-GD-6 [FR-GD-5, FR-GD-9]:** Implementar CLI/app local, configuração exemplo e caminho de demo com snapshots permitidos.
-- [ ] **T-GD-7 [FR-GD-8]:** Configurar ignore de segredos, dados brutos, snapshots completos, logs e outputs; manter fixtures mínimas.
-- [ ] **T-GD-8 [FR-GD-6]:** Escrever README com arquitetura, quickstart, dados, métricas, agente, auditoria, guardrails, segurança, testes e limitações.
-- [ ] **T-GD-9 [FR-GD-7]:** Criar diagrama-fonte e exportar PDF conceitual legível com todos os componentes exigidos.
-- [ ] **T-GD-10 [FR-GD-10]:** Implementar smoke path Brasil e UF e produzir relatório de exemplo sanitizado.
-
-## Verificação
-
-- [ ] **T-GD-11 [AC-GD-1, AC-GD-2, AC-GD-3, AC-GD-10]:** Verificar sequência, sanitização, consulta, hashes e bloqueio quando um evento crítico não puder ser persistido.
-- [ ] **T-GD-12 [AC-GD-4]:** Executar quickstart em ambiente limpo sem edição de código.
-- [ ] **T-GD-13 [AC-GD-5, AC-GD-6]:** Revisar todas as seções do README e abrir/inspecionar PDF e relatório.
-- [ ] **T-GD-14 [AC-GD-7]:** Executar scanner de segredos e inspecionar arquivos preparados para Git.
-- [ ] **T-GD-15 [AC-GD-8]:** Rodar smoke tests Brasil e SP e validar requisitos obrigatórios e indisponibilidades justificadas.
-- [ ] **T-GD-16 [AC-GD-9]:** Executar formatador em modo check, lint, type-check e suíte de testes definidos pelo projeto.
+- [ ] **T-GD-1 [P0, D4, CH-01, CH-03, CH-04, CH-05, CH-06, CH-07, CH-08, CH-09, CH-12, FR-GD-1, NFR-GD-1, NFR-GD-2, AC-GD-1, depends: T-AR-8]:** Construir e validar o golden estrito com valores reais, notícia live, claims válidas e bundle sanitizado completo. **Evidence:** relatório/bundle de referência e assertions verdes.
+- [ ] **T-GD-2 [P0, D4, CH-13, CH-15, FR-GD-2, NFR-GD-1, NFR-GD-2, AC-GD-2, depends: T-GD-1]:** Executar suítes separadas de degradação, injeção, privacidade, segurança e falha crítica. **Evidence:** resultados esperados sem elegibilidade golden.
+- [ ] **T-GD-3 [P0, D4, CH-17, FR-GD-3, FR-GD-4, NFR-GD-3, AC-GD-3, AC-GD-4, AC-GD-5, depends: T-GD-1]:** Finalizar quickstarts determinístico/live, README completo e HTML sanitizado rotulado. **Evidence:** comandos reproduzidos e checklist documental verde.
+- [ ] **T-GD-4 [P0, D4, CH-18, FR-GD-5, NFR-GD-4, AC-GD-6, depends: T-GD-3]:** Criar fonte do diagrama, compilar PDF e verificar visualmente componentes/limites. **Evidence:** fonte, PDF e checklist visual.
+- [ ] **T-GD-5 [P0, D5, CH-15, CH-16, CH-17, CH-19, FR-GD-6, FR-GD-8, NFR-GD-2, NFR-GD-5, AC-GD-7, AC-GD-9, depends: T-GD-2, T-GD-3, T-GD-4]:** Passar CI, qualidade, Gitleaks, staged/history review, ignore policy e validação das 28 tarefas. **Evidence:** checks verdes e relatório de higiene.
+- [ ] **T-GD-6 [P0, D5, CH-03, CH-17, CH-19, FR-GD-7, FR-GD-8, AC-GD-4, AC-GD-8, AC-GD-9, depends: T-GD-5]:** Executar smoke live, revisão visual, publicação e clone limpo não autenticado. **Evidence:** URL pública e checklist de release reproduzido.

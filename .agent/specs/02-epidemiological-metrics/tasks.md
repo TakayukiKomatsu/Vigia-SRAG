@@ -1,28 +1,11 @@
-# Tarefas — Métricas e gráficos epidemiológicos
+# Tarefas — Métricas e gráficos epidemiológicos v2
 
-> Derivado de spec.md versão 1.0
+> Must: 7 tarefas. Todas no Dia 2. Stretch fica em `../stretch-backlog.md`.
 
-## Preparação
-
-- [ ] **T-MT-1 [FR-MT-2..FR-MT-5]:** Formalizar matriz de fórmulas, campos canônicos, períodos, estados e versões.
-- [ ] **T-MT-2 [FR-MT-4]:** Validar categorias CNES compatíveis e regra paciente-dia/leito-dia com fixtures de fronteira.
-- [ ] **T-MT-3 [FR-MT-5]:** Validar definições oficiais de público-alvo/esquema para influenza e COVID-19 e registrá-las em configuração versionada.
-
-## Implementação
-
-- [ ] **T-MT-4 [FR-MT-1, NFR-MT-3]:** Implementar tipos de geografia/data e repositório analítico DuckDB somente leitura.
-- [ ] **T-MT-5 [FR-MT-2]:** Implementar taxa de aumento e estados de denominador zero.
-- [ ] **T-MT-6 [FR-MT-3]:** Implementar letalidade e contabilização de evoluções desconhecidas.
-- [ ] **T-MT-7 [FR-MT-4, FR-MT-10]:** Implementar paciente-dias, leito-dias, ocupação estimada e indicador auxiliar de uso de UTI.
-- [ ] **T-MT-8 [FR-MT-5]:** Implementar seleção e cálculo independente das duas coberturas vacinais.
-- [ ] **T-MT-9 [FR-MT-6, FR-MT-7]:** Implementar calendário completo das séries diária e mensal com cobertura temporal explícita.
-- [ ] **T-MT-10 [FR-MT-8]:** Implementar modelos estruturados de métricas, qualidade, proveniência e indisponibilidade.
-- [ ] **T-MT-11 [FR-MT-9, NFR-MT-5]:** Implementar renderer dos dois gráficos e descrições textuais.
-
-## Verificação
-
-- [ ] **T-MT-12 [AC-MT-1, AC-MT-2, AC-MT-3]:** Verificar geografias, fronteiras da taxa de aumento e denominador da letalidade.
-- [ ] **T-MT-13 [AC-MT-4, AC-MT-5]:** Verificar ocupação, fallback corretamente rotulado e independência das coberturas.
-- [ ] **T-MT-14 [AC-MT-6, AC-MT-7, AC-MT-9]:** Verificar cardinalidade/calendário das séries, cobertura temporal insuficiente e contrato de proveniência/qualidade.
-- [ ] **T-MT-15 [AC-MT-8]:** Comparar artefatos gráficos com séries conhecidas e inspecionar título, fonte e descrição.
-- [ ] **T-MT-16 [NFR-MT-4]:** Medir o pacote em fixture e no snapshot completo disponível; registrar resultado real no README.
+- [ ] **T-MT-1 [P0, D2, CH-11, CH-13, FR-MT-1, FR-MT-10, NFR-MT-2, AC-MT-1, AC-MT-10, depends: T-DF-7]:** Implementar contratos tipados de tempo, métrica, qualidade, proveniência, série e gráfico. **Evidence:** testes de calendário, watermark e schema verdes.
+- [ ] **T-MT-2 [P0, D2, CH-04, CH-05, FR-MT-2, FR-MT-3, AC-MT-2, AC-MT-3, depends: T-MT-1]:** Implementar aumento e mortalidade populacional com períodos estabilizados. **Evidence:** fixtures de fórmula, denominador zero e óbito por outra causa verdes.
+- [ ] **T-MT-3 [P0, D2, CH-06, FR-MT-4, FR-MT-5, FR-MT-6, AC-MT-4, AC-MT-5, AC-MT-6, depends: T-MT-1]:** Implementar letalidade madura, paciente-dias/leito-dias, rejeição acima de 100% e uso suplementar de UTI. **Evidence:** testes de coorte e UTI verdes.
+- [ ] **T-MT-4 [P0, D2, CH-07, FR-MT-7, AC-MT-7, depends: T-DF-7, T-MT-1]:** Selecionar a observação oficial elegível de influenza 2026 com evidência completa. **Evidence:** teste de cutoff e objeto de cobertura conhecido.
+- [ ] **T-MT-5 [P0, D2, CH-08, CH-09, FR-MT-8, FR-MT-9, FR-MT-10, NFR-MT-5, AC-MT-8, AC-MT-9, AC-MT-10, depends: T-MT-1]:** Implementar séries exatas e gráficos fiéis, acessíveis e coverage-aware. **Evidence:** comparação ponto a ponto e inspeção de metadados.
+- [ ] **T-MT-6 [P1, D2, CH-04, CH-05, CH-06, CH-07, CH-08, CH-09, CH-10, CH-16, FR-MT-1, FR-MT-2, FR-MT-3, FR-MT-4, FR-MT-5, FR-MT-6, FR-MT-7, FR-MT-8, FR-MT-9, FR-MT-10, NFR-MT-1, NFR-MT-2, NFR-MT-3, NFR-MT-5, AC-MT-1, AC-MT-2, AC-MT-3, AC-MT-4, AC-MT-5, AC-MT-6, AC-MT-7, AC-MT-8, AC-MT-9, AC-MT-10, depends: T-MT-2, T-MT-3, T-MT-4, T-MT-5]:** Cobrir fórmulas, períodos, qualidade, proveniência, privacidade e gráficos. **Evidence:** suíte unitária/contratual verde.
+- [ ] **T-MT-7 [P1, D2, CH-02, CH-04, CH-05, CH-06, CH-07, CH-08, CH-09, CH-10, CH-16, CH-19, NFR-MT-3, NFR-MT-4, AC-MT-10, AC-MT-11, depends: T-MT-6]:** Integrar com a fixture DuckDB e medir o pacote completo conhecido. **Evidence:** pacote de evidência completo em até 5 segundos no ambiente documentado.

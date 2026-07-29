@@ -1,83 +1,91 @@
-@final @governance-delivery
+@draft @governance-delivery
 Feature: Governança, transparência e entrega da PoC SRAG
-  Os cenários derivam do spec.md versão 1.0.
+  Os cenários derivam do spec.md versão 2.0.
 
-  @fr-gd-1 @fr-gd-2 @ac-gd-1
-  Scenario: Auditar uma execução bem-sucedida
-    Given uma solicitação válida e fontes disponíveis
-    When um relatório for publicado
-    Then deve existir um run ID único
-    And a trilha deve conter início, validação, snapshot, nós, tools, guardrails, evidências e publicação
-    And deve vincular parâmetros, versões, snapshots, notícias e hashes dos artefatos
+  @ch-01 @ch-03 @ch-04 @ch-05 @ch-06 @ch-07 @ch-08 @ch-09 @ch-12 @fr-gd-1 @nfr-gd-1 @nfr-gd-2 @ac-gd-1
+  Scenario: Aprovar somente o golden run completo
+    Given uma execução live candidata à referência
+    When o gate golden for aplicado
+    Then as quatro métricas obrigatórias devem possuir valores reais e disponíveis
+    And os dois indicadores suplementares devem estar presentes
+    And os gráficos de 30 dias e 12 meses devem estar completos
+    And deve existir ao menos uma notícia live recente válida
+    And devem existir claims OpenAI válidas
+    And fontes, métodos, watermarks, qualidade, limitações e run ID devem estar presentes
+    And o run bundle completo deve possuir hashes válidos e estar sanitizado
 
-  @fr-gd-3 @nfr-gd-2 @ac-gd-2
-  Scenario: Sanitizar a trilha de auditoria
-    Given dados internos que possuem chave técnica e configuração com segredo
-    When eventos forem persistidos
-    Then somente campos permitidos por tipo de evento devem ser gravados
-    And nenhum segredo, chave técnica, registro clínico ou payload bruto deve aparecer
-
-  @fr-gd-4 @ac-gd-3
-  Scenario: Consultar decisões por run ID
-    Given uma execução concluída
-    When o avaliador consultar sua trilha pelo run ID
-    Then os eventos devem aparecer em ordem temporal
-    And cada decisão deve identificar componente e versão
-    And a integridade dos artefatos deve ser validada por hash
-
-  @fr-gd-1 @nfr-gd-1 @ac-gd-10
-  Scenario: Não publicar relatório sem evento crítico
-    Given que o store de auditoria não consegue persistir um evento crítico
-    When o grafo tentar avançar para o LLM ou publicação
-    Then a execução deve ser interrompida
-    And nenhum relatório deve ser marcado como auditável e publicado
-
-  @fr-gd-5 @fr-gd-9 @nfr-gd-3 @ac-gd-4
-  Scenario: Reproduzir a demonstração pelo quickstart
-    Given um ambiente limpo com Python suportado
-    And as dependências e configurações documentadas
-    When o avaliador seguir o quickstart com snapshots demonstrativos
-    Then um relatório deve ser gerado sem editar o código
-    And o relatório deve mostrar watermarks dos snapshots usados
-
-  @fr-gd-6 @ac-gd-5
-  Scenario: Documentar decisões e limitações avaliadas
-    When o README for revisado
-    Then deve explicar arquitetura, instalação, configuração e fluxo de dados
-    And deve explicar fórmulas, fontes, qualidade, guardrails e tratamento sensível
-    And deve explicar auditoria, testes, limitações e reprodução da demo
-
-  @fr-gd-7 @nfr-gd-4 @ac-gd-6
-  Scenario: Entregar o diagrama conceitual em PDF
-    When o PDF de arquitetura for aberto
-    Then ele deve estar legível
-    And deve mostrar orquestrador, tools, LLM, DuckDB e auditoria
-    And deve mostrar fontes SRAG, CNES, vacinação e notícias
-    And deve mostrar interações e o limite de dados sensíveis
-
-  @fr-gd-8 @ac-gd-7
-  Scenario: Preparar repositório público sem material indevido
-    When os arquivos preparados para Git forem inspecionados
-    Then nenhum segredo deve estar presente
-    And dados brutos, snapshots completos, logs e saídas locais devem estar ignorados
-    And configurações de exemplo não devem conter credenciais reais
-
-  @fr-gd-10 @ac-gd-8
-  Scenario Outline: Validar relatório fim a fim
-    Given fontes ou snapshots válidos para "<geography>"
-    When o smoke test gerar o relatório
-    Then devem existir aumento, letalidade e ocupação estimada de UTI
-    And devem existir coberturas independentes de influenza e COVID-19
-    And devem existir os gráficos diário de 30 dias e mensal de 12 meses
-    And devem existir fontes, limitações, run ID e trilha íntegra
-    And qualquer indisponibilidade deve possuir motivo verificável
+  @ch-13 @ch-15 @fr-gd-2 @nfr-gd-1 @ac-gd-2
+  Scenario Outline: Separar degradação do golden run
+    Given uma execução com "<failure>"
+    When a suíte correspondente for executada
+    Then o resultado deve ser "<result>"
+    And a execução não deve ser selecionada como golden
 
     Examples:
-      | geography |
-      | BR        |
-      | SP        |
+      | failure          | result                           |
+      | notícia ausente  | relatório quantitativo degradado |
+      | OpenAI ausente   | comentário factual determinístico |
+      | métrica ausente  | seção indisponível com motivo     |
+      | auditoria crítica | publicação interrompida          |
 
-  @nfr-gd-5 @ac-gd-9
-  Scenario: Passar verificações de qualidade do projeto
-    When estilo, tipagem e testes documentados forem executados
-    Then todas as verificações devem terminar sem erro
+  @ch-17 @fr-gd-3 @nfr-gd-3 @ac-gd-3
+  Scenario: Reproduzir o quickstart determinístico
+    Given um clone limpo e não autenticado
+    When o avaliador seguir o quickstart determinístico
+    Then nenhum segredo ou edição de código deve ser necessário
+    And OpenAI fake e RSS fixo devem ser usados
+    And nenhuma chamada live OpenAI ou RSS deve ocorrer
+    And o HTML deve estar marcado como demonstração não-live
+
+  @ch-03 @ch-17 @fr-gd-3 @ac-gd-4
+  Scenario: Executar o quickstart live com uma credencial
+    Given um clone limpo e somente "OPENAI_API_KEY"
+    When o avaliador seguir o quickstart live
+    Then o modelo padrão aprovado deve ser usado e auditado
+    And Google News RSS deve ser consultado no momento da execução
+    And um candidato ao golden run deve ser produzido
+
+  @ch-17 @fr-gd-4 @ac-gd-5
+  Scenario: Documentar e exemplificar a solução
+    Given README e HTML sanitizado candidatos ao release
+    When README e HTML de referência forem revisados
+    Then devem cobrir setup, arquitetura, fontes, fórmulas, períodos e qualidade
+    And devem cobrir agente, tools, OpenAI, notícias, auditoria, guardrails e privacidade
+    And devem cobrir testes, quickstarts, limitações e interpretação
+    And o HTML deve estar sanitizado e rotulado live ou não-live
+
+  @ch-18 @fr-gd-5 @nfr-gd-4 @ac-gd-6
+  Scenario: Entregar diagrama conceitual em PDF
+    Given a fonte do diagrama compilada para PDF
+    When o PDF renderizado for aberto
+    Then deve estar legível
+    And deve mostrar fontes de saúde, RSS, DuckDB, tools, LangGraph e OpenAI
+    And deve mostrar validador, renderer, AuditSink, bundle, fluxos e limites sensíveis
+
+  @ch-15 @ch-16 @ch-17 @fr-gd-6 @nfr-gd-2 @nfr-gd-5 @ac-gd-7
+  Scenario: Preparar repositório público seguro
+    Given um commit candidato ao release público
+    When qualidade, CI, Gitleaks, staged files, histórico e ignores forem verificados
+    Then pytest, Ruff e mypy devem passar
+    And nenhum segredo, dado bruto, snapshot completo ou run local deve aparecer
+    And nenhum registro clínico, payload bruto ou artigo integral deve aparecer
+    And o documento restrito do desafio não deve estar versionado
+
+  @ch-17 @fr-gd-7 @ac-gd-8
+  Scenario: Verificar a entrega pública
+    Given a URL GitHub do commit de release
+    When uma pessoa sem autenticação clonar o repositório
+    Then o quickstart determinístico deve funcionar sem edição
+    And o run ID, as evidências e o HTML de exemplo devem ser localizáveis
+    And a evidência do golden live sanitizado deve estar disponível
+
+  @ch-19 @fr-gd-8 @ac-gd-9
+  Scenario: Respeitar o plano de cinco dias
+    Given os quatro backlogs v2 e o backlog Stretch
+    When os quatro arquivos tasks.md forem inspecionados
+    Then devem existir exatamente 7 tarefas de dados
+    And devem existir exatamente 7 tarefas de métricas
+    And devem existir exatamente 8 tarefas agentivas
+    And devem existir exatamente 6 tarefas de entrega
+    And toda tarefa deve ter prioridade, dia, CH, requisito, AC, dependências e evidência
+    And Stretch deve estar em arquivo separado e bloqueado

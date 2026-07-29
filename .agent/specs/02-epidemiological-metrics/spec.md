@@ -1,181 +1,251 @@
 # Métricas e gráficos epidemiológicos de SRAG
 
-> Status: FINAL
+> Status: DRAFT
 > Tier: extended
-> Version: 1.0
+> Version: 2.0
 > Owner: Indicium HealthCare PoC
 > Created: 2026-07-28
 > Last Updated: 2026-07-28
 
 ## Summary
 
-Calcular, para Brasil ou uma UF, métricas reproduzíveis de aumento de casos, letalidade, ocupação estimada de UTI por SRAG e coberturas vacinais de influenza e COVID-19, além das séries de 30 dias e 12 meses exigidas.
+Calcular para o Brasil quatro métricas obrigatórias, dois indicadores
+suplementares e as séries/gráficos diário e mensal exigidos, usando fórmulas,
+períodos, qualidade e proveniência determinísticos.
 
 ## Problem
 
-Os nomes do desafio são ambíguos sem fórmula, denominador e tratamento de ausentes. Delegar os cálculos ao LLM comprometeria precisão e auditoria.
+“Mortalidade”, “ocupação de UTI” e “taxa de vacinação” são ambíguas sem
+denominador e fonte. Usar letalidade como mortalidade, publicar um proxy acima
+de 100% ou misturar calendários produziria um relatório tecnicamente
+enganoso. O LLM não participa dos cálculos.
 
 ## Goals
 
-- **FR-MT-1:** Aceitar geografia Brasil ou UF oficial e uma data de referência limitada ao snapshot.
-- **FR-MT-2:** Calcular aumento percentual comparando sete dias encerrados na referência com os sete dias anteriores.
-- **FR-MT-3:** Calcular letalidade entre internações SRAG com evolução conhecida e expor exclusões.
-- **FR-MT-4:** Calcular ocupação estimada de leitos UTI por pacientes SRAG usando paciente-dias e leito-dias CNES.
-- **FR-MT-5:** Calcular separadamente cobertura de influenza e cobertura de COVID-19 conforme público-alvo/esquema oficial.
-- **FR-MT-6:** Produzir série diária dos 30 dias encerrados na referência, incluindo dias sem casos com valor zero.
-- **FR-MT-7:** Produzir série mensal dos 12 meses encerrados no mês da referência, incluindo meses sem casos com valor zero.
-- **FR-MT-8:** Retornar cada métrica como objeto estruturado com fórmula, valor/estado, numerador, denominador, unidade, período, geografia, snapshot, versão e qualidade.
-- **FR-MT-9:** Gerar dois gráficos a partir das séries estruturadas, sem usar o LLM.
-- **FR-MT-10:** Disponibilizar a proporção de internações com uso de UTI apenas como indicador auxiliar, nunca como ocupação.
+- **FR-MT-1:** Derivar `generated_at`, `as_of`, watermarks, semanas
+  epidemiológicas brasileiras e cutoffs efetivos de cada resultado.
+- **FR-MT-2:** Calcular aumento de casos entre semanas epidemiológicas
+  completas, consecutivas e estabilizadas.
+- **FR-MT-3:** Calcular a mortalidade populacional obrigatória por SRAG por
+  100.000 habitantes nas quatro semanas epidemiológicas estabilizadas mais
+  recentes.
+- **FR-MT-4:** Calcular letalidade hospitalar suplementar em uma coorte madura
+  de quatro semanas.
+- **FR-MT-5:** Calcular a pressão obrigatória de SRAG sobre capacidade de UTI
+  por paciente-dias SIVEP sobre leito-dias CNES compatíveis.
+- **FR-MT-6:** Calcular a proporção suplementar de internações SRAG com uso de
+  UTI, sem rotulá-la como ocupação.
+- **FR-MT-7:** Selecionar a observação oficial mais recente da cobertura da
+  campanha de influenza 2026 para a população-alvo, publicada até `as_of`.
+- **FR-MT-8:** Produzir série diária de 30 dias encerrada em `as_of`, marcando
+  os 14 dias mais recentes como provisórios.
+- **FR-MT-9:** Produzir série dos 12 meses-calendário completos anteriores ao
+  mês de `as_of`.
+- **FR-MT-10:** Retornar contratos tipados de métrica, qualidade,
+  proveniência, série e gráfico e renderizar os dois gráficos sem LLM.
+
+## Non-Functional Requirements
+
+- **NFR-MT-1:** Fórmulas, arredondamento, indisponibilidade e denominador zero
+  são determinísticos e versionados.
+- **NFR-MT-2:** Cada valor e gráfico expõe período efetivo, fonte, snapshot,
+  watermark, versão de fórmula e qualidade.
+- **NFR-MT-3:** Consultas ao DuckDB são somente leitura e nenhuma aritmética ou
+  série é delegada ao LLM.
+- **NFR-MT-4:** O pacote completo termina em até cinco segundos na fixture
+  reduzida do ambiente de teste documentado.
+- **NFR-MT-5:** Gráficos correspondem às séries e incluem título, período,
+  unidade, fonte, watermark e descrição textual.
 
 ## Non-Goals
 
-- **NG-MT-1:** Inferir causalidade ou prever surtos.
-- **NG-MT-2:** Calcular ocupação geral de UTI por todas as causas.
-- **NG-MT-3:** Somar ou tirar média das coberturas de influenza e COVID-19.
-- **NG-MT-4:** Imputar valores clínicos ausentes para produzir uma métrica.
+- métricas ou gráficos por UF;
+- cobertura de COVID-19;
+- ocupação observada de UTI por todas as causas;
+- inferência causal ou recomendação clínica;
+- preenchimento com zero fora de período comprovadamente coberto.
 
-## Scope
+## Temporal Contract
 
-Inclui domínio das fórmulas, consultas DuckDB parametrizadas, qualidade, séries e rendering dos dois gráficos. Não inclui ingestão, notícias ou narrativa.
+- Semana epidemiológica brasileira: domingo a sábado.
+- `generated_at`: instante UTC da execução.
+- `as_of` padrão: maior data válida de início dos sintomas no snapshot SIVEP.
+- `as_of` solicitado após esse watermark: request rejeitado.
+- Semana de referência: última semana completa cujo sábado terminou ao menos
+  14 dias antes de `as_of`.
+- Períodos de fontes diferentes permanecem separados.
+- A janela de notícias pertence ao SDD 03 e termina em `generated_at`.
 
-## Existing Context
+## Required Metrics
 
-Depende do manifesto e das tabelas canônicas de `01-data-foundation`. A data epidemiológica principal é início dos sintomas válido. Brasil é agregação das UFs disponíveis; UF usa sigla oficial.
+### Case Growth
 
-## Users and Workflows
+```text
+growth = (reference_week_cases - previous_week_cases)
+         / previous_week_cases * 100
+```
 
-O orquestrador ou a CLI solicita um pacote de métricas com `geography` e `as_of`. O serviço fixa o snapshot, valida a referência, executa fórmulas versionadas e devolve um `EvidenceBundle` quantitativo.
+As semanas são completas, consecutivas e encerradas no cutoff estabilizado.
+Com denominador positivo, o percentual pode ser positivo, zero ou negativo.
+Se ambas forem zero, estado `stable_zero` e valor `0`. Se a anterior for zero
+e a atual positiva, estado `new_activity` e nenhum infinito. O numerador
+matemático é `delta_cases`, acompanhado de `current_cases` e `previous_cases`.
 
-## Proposed Behavior
+### Population Mortality
 
-### Aumento de casos
+```text
+mortality_per_100k =
+  SRAG_deaths_in_latest_4_stabilized_epi_weeks
+  / official_population * 100_000
+```
 
-$$growth = \frac{current_7d - previous_7d}{previous_7d} \times 100$$
+Conta somente óbitos classificados como decorrentes de SRAG cuja data de
+evolução esteja nas quatro semanas. Óbito por outra causa não entra. O
+denominador é a população oficial IBGE aplicável. A unidade é
+`óbitos por 100 mil habitantes`.
 
-- `previous_7d > 0`: valor percentual, que pode ser negativo.
-- ambos zero: estado `stable_zero` e valor 0%.
-- anterior zero e atual positivo: estado `new_activity`, sem percentual infinito.
+## Supplementary Indicators
 
-### Letalidade hospitalar
+### Hospital Case Fatality
 
-$$fatality = \frac{deaths}{known_outcomes} \times 100$$
+```text
+fatality =
+  SRAG_deaths
+  / hospitalizations_with_known_outcome * 100
+```
 
-O objeto deve expor total de internações, evoluções conhecidas e desconhecidas. O relatório apresenta definição explícita, embora corresponda à “taxa de mortalidade” pedida.
+A coorte usa internações com início dos sintomas nas quatro semanas completas
+encerradas ao menos 28 dias antes de `as_of`. Evoluções desconhecidas saem do
+denominador, são quantificadas e aparecem como limitação. O rótulo inclui
+“letalidade hospitalar suplementar”, nunca apenas “mortalidade”.
 
-### Ocupação estimada de UTI por SRAG
+### ICU Use
 
-$$occupancy = \frac{SRAG\ ICU\ patientDays}{available\ ICU\ bedDays} \times 100$$
+```text
+icu_use =
+  SRAG_hospitalizations_with_ICU_use
+  / SRAG_hospitalizations_with_known_ICU_status * 100
+```
 
-Paciente-dias usa intervalo inclusivo de permanência sobreposto ao período consultado. Alta ausente não autoriza permanência ilimitada: aplica-se a data de referência apenas quando o caso continua internado segundo regra canônica; caso indeterminado é excluído e contado. Capacidade CNES usa competência aplicável e categorias configuradas. Resultado acima de 100% é mantido e marcado como anomalia de compatibilidade/qualidade, não truncado.
+É somente indicador suplementar e nunca recebe o rótulo de ocupação.
 
-### Vacinação
+## Required ICU Proxy
 
-Cada indicador usa numerador, denominador, população-alvo, esquema e período publicados pela fonte oficial. O sistema seleciona a observação mais recente com período aplicável até `as_of`; nunca combina campanhas distintas nem substitui uma UF ausente pelo Brasil.
+```text
+icu_pressure =
+  valid_SRAG_ICU_patient_days
+  / compatible_CNES_existing_ICU_bed_days * 100
+```
 
-### Séries
+O período é a competência mensal completa mais recente comum a SIVEP e CNES.
+Paciente-dias são a interseção de entrada/saída válidas com o mês; saída
+desconhecida é excluída e contada. O denominador usa leitos existentes das
+categorias adultas, pediátricas ou neonatais verificadas no contrato, sem
+confundir leito SUS com disponibilidade.
 
-- Diária: 30 datas consecutivas terminando em `as_of`.
-- Mensal: 12 meses-calendário terminando no mês de `as_of`.
-- Lacunas temporais explícitas recebem zero somente quando o snapshot cobre o período; fora do watermark/cobertura, recebem estado de indisponibilidade.
+O rótulo obrigatório é “pressão estimada de SRAG sobre a capacidade registrada
+de UTI”. O relatório declara que não é ocupação observada por todas as causas.
+Resultado acima de 100% fica `unavailable` por incompatibilidade; não é
+truncado nem publicado como percentual válido.
+
+## Required Vaccination Metric
+
+```text
+influenza_coverage =
+  valid_influenza_doses_for_target_groups
+  / official_target_population * 100
+```
+
+Usa a observação oficial mais recente da campanha 2026 publicada até `as_of`.
+Preserva campanha, grupos-alvo, residência, numerador, denominador, cobertura
+publicada, atualização e fonte. Não usa população geral inventada nem
+reconstrói esquemas a partir do SIVEP.
+
+## Series and Charts
+
+- diário: 30 datas consecutivas terminando em `as_of`, por início dos
+  sintomas; dias cobertos sem caso valem zero; os 14 dias mais recentes têm
+  estado e marca visual `provisional`;
+- mensal: 12 meses-calendário completos anteriores ao mês de `as_of`, por
+  início dos sintomas; meses cobertos sem caso valem zero.
+
+Períodos fora da cobertura não recebem zero. Série insuficiente fica
+indisponível e seu gráfico não é renderizado.
 
 ## Interfaces and Data
 
 ```text
-get_metric_bundle(geography, as_of, snapshot_id) -> MetricBundle
-get_case_series(geography, as_of, snapshot_id) -> CaseSeriesBundle
-render_charts(series_bundle, output_dir) -> ChartArtifacts
+MetricResult:
+  metric_id, label, value, state, reason, unit, numerator, denominator,
+  period_start, period_end, geography, snapshot_id, formula_version,
+  quality, source_ids, limitations
+
+SeriesResult:
+  series_id, granularity, points[{period, value, state}],
+  period_start, period_end, geography, snapshot_id, quality, source_ids
+
+ChartResult:
+  chart_id, series_id, path, sha256, title, period, unit,
+  source_ids, watermark, alt_text
 ```
 
-`geography` é `BR` ou uma UF oficial. O serviço não aceita SQL, coluna ou fórmula enviados pelo chamador.
+`geography` é sempre `BR`. Campos numéricos podem ser ausentes apenas quando
+`state` e `reason` explicarem o resultado não percentual ou indisponível.
 
-Objeto mínimo:
+## Quality and Failure Handling
 
-```json
-{
-  "id": "case_growth_7d",
-  "status": "available",
-  "value": 12.3,
-  "unit": "%",
-  "numerator": 1123,
-  "denominator": 1000,
-  "period": {"start": "...", "end": "..."},
-  "geography": "SP",
-  "snapshot_id": "sha256:...",
-  "formula_version": "1.0",
-  "quality": {"included": 2123, "excluded": 25, "completeness": 0.98, "warnings": []}
-}
-```
+- completude `>=90%`: disponível;
+- completude `>=70%` e `<90%`: disponível com aviso;
+- completude `<70%`: indisponível;
+- coluna crítica, hash, fonte ou cobertura inválida sobrepõe a porcentagem;
+- uma métrica indisponível não inventa substituto;
+- o golden run exige todas as quatro métricas e ambas as séries disponíveis.
 
-## Alternatives Considered
+## Security and Compliance
 
-- SQL gerado pelo LLM: rejeitado por baixa governança.
-- Proporção de internações com UTI como ocupação: rejeitada por denominador incorreto; preservada como auxiliar.
-- Ocupação por contagem de pacientes: rejeitada em favor de paciente-dias/leito-dias.
-
-## Edge Cases and Failure Handling
-
-- UF inválida/data futura ao snapshot: erro de validação antes da consulta.
-- Base sem 14 dias cobertos: aumento indisponível.
-- Denominador anterior zero: estados definidos acima.
-- Sem evolução conhecida: letalidade indisponível.
-- Permanência/capacidade incompatíveis: ocupação indisponível ou disponível com warning quantificado conforme gravidade.
-- Cobertura vacinal ausente: indicador específico indisponível; o outro permanece independente.
-- Saída gráfica sem 30/12 pontos: falha do renderer, não preenchimento silencioso.
-
-## Risks and Constraints
-
-- **NFR-MT-1:** Fórmulas não dependem do LLM e são determinísticas para snapshot/parâmetros fixos.
-- **NFR-MT-2:** Toda métrica disponível possui proveniência e denominador verificáveis.
-- **NFR-MT-3:** Consultas são parametrizadas, somente leitura e limitadas a Brasil/UF.
-- **NFR-MT-4:** Um pacote completo sobre fixture deve ser calculado em até 5 segundos em estação local; o snapshot completo será medido, não prometido sem evidência.
-- **NFR-MT-5:** Gráficos são legíveis, possuem título, período, unidade, fonte e texto alternativo/descrição tabular.
-
-## Threats and Security Considerations
-
-Evitar query injection por enums e parâmetros, não retornar chave técnica, suprimir células pequenas não é necessário quando o relatório só apresenta contagens agregadas nacionais/UF e séries gerais; se um filtro futuro aumentar granularidade, nova avaliação será obrigatória.
-
-## Rollout, Migration, and Rollback
-
-Fórmulas têm versão. Alteração cria versão nova e mantém fixtures da versão anterior. Rollback seleciona versão anterior sem reescrever relatórios já auditados.
-
-## Observability
-
-Registrar duração, linhas lidas, fórmula/versão, denominadores, estados de indisponibilidade, warnings e artefatos gráficos por run ID.
-
-## Capacity and Operations
-
-Pré-agregações podem ser materializadas somente se profiling demonstrar necessidade. A primeira implementação usa DuckDB sobre Parquet e evita cópias em memória.
-
-## Compliance
-
-Resultados são epidemiológicos agregados e devem conter aviso de não uso clínico. As definições metodológicas são parte obrigatória do relatório.
+As consultas são parametrizadas e somente leitura. Resultados não contêm
+chaves técnicas nem registros individuais. Fórmulas e gráficos são código
+determinístico; o LLM recebe somente resultados agregados validados.
 
 ## Acceptance Criteria
 
-- **AC-MT-1 (FR-MT-1):** Brasil e uma UF produzem resultados com geografia e data corretas; entrada inválida é rejeitada.
-- **AC-MT-2 (FR-MT-2):** As três condições de denominador do aumento produzem percentual, `stable_zero` ou `new_activity` conforme definido.
-- **AC-MT-3 (FR-MT-3):** Letalidade exclui evolução desconhecida e expõe a exclusão.
-- **AC-MT-4 (FR-MT-4, FR-MT-10):** Ocupação usa paciente-dias/leito-dias; uso de UTI aparece apenas como auxiliar.
-- **AC-MT-5 (FR-MT-5):** Influenza e COVID-19 aparecem separadas com público-alvo e fonte, sem média.
-- **AC-MT-6 (FR-MT-6, FR-MT-7):** Séries possuem exatamente 30 dias e 12 meses ordenados quando o período está coberto.
-- **AC-MT-7 (FR-MT-8):** Toda métrica contém proveniência, fórmula, denominador e qualidade ou motivo estruturado de indisponibilidade.
-- **AC-MT-8 (FR-MT-9, NFR-MT-5):** Dois gráficos correspondem ponto a ponto às séries e contêm metadados de leitura.
-- **AC-MT-9 (FR-MT-6, FR-MT-7):** Período sem cobertura temporal suficiente deixa séries indisponíveis e impede o renderer de criar pontos ou gráficos artificiais.
+- **AC-MT-1 (FR-MT-1):** Calendário, `as_of`, cutoffs e períodos por fonte são
+  reproduzíveis e solicitações posteriores ao watermark falham.
+- **AC-MT-2 (FR-MT-2):** Aumento e estados de denominador zero seguem a fórmula.
+- **AC-MT-3 (FR-MT-3):** Mortalidade populacional usa óbitos SRAG elegíveis,
+  quatro semanas estabilizadas e população IBGE.
+- **AC-MT-4 (FR-MT-4):** Letalidade suplementar usa a coorte madura e expõe
+  desfechos desconhecidos.
+- **AC-MT-5 (FR-MT-5):** Pressão UTI usa paciente-dias/leito-dias compatíveis,
+  rótulo/limitação corretos e rejeita valor acima de 100%.
+- **AC-MT-6 (FR-MT-6):** Uso de UTI aparece apenas como proporção suplementar.
+- **AC-MT-7 (FR-MT-7):** Influenza usa a observação oficial elegível e seu
+  público-alvo.
+- **AC-MT-8 (FR-MT-8, NFR-MT-5):** Série/gráfico diário têm 30 pontos fiéis e
+  14 provisórios.
+- **AC-MT-9 (FR-MT-9, NFR-MT-5):** Série/gráfico mensal têm 12 meses completos
+  anteriores.
+- **AC-MT-10 (FR-MT-10, NFR-MT-2):** Todo resultado possui contrato,
+  proveniência, qualidade e motivo estruturado.
+- **AC-MT-11 (NFR-MT-1, NFR-MT-3, NFR-MT-4):** Repetibilidade, acesso somente
+  leitura, ausência de cálculo no LLM e limite da fixture são verificáveis.
 
 ## Verification Plan
 
-- Unit: fórmulas e todos os estados de denominador/fronteira.
-- Integration: consultas sobre fixture DuckDB com Brasil, UF e lacunas.
-- End-to-end: gerar pacote e gráficos e comparar valores/contagens conhecidos.
-- Operational: medir execução em fixture e snapshot completo disponível.
+- unitários de fórmulas, períodos, calendários, denominadores e qualidade;
+- fixtures para `stable_zero`, `new_activity`, crescimento negativo,
+  mortalidade, letalidade, paciente-dias e `>100%`;
+- integração somente leitura com DuckDB reduzido;
+- comparação ponto a ponto entre séries e gráficos;
+- medição do pacote completo na fixture.
 
 ## Open Questions
 
-Nenhuma bloqueadora. Categorias CNES e definições oficiais de esquema vacinal são dados de configuração versionados, validados contra a documentação da fonte durante a implementação.
+Os códigos SIVEP, categorias CNES, população e observação PNI dependem do
+anexo SDD 01 verificado. Enquanto isso, este spec permanece `DRAFT`.
 
 ## Change Log
 
-| Version | Date | Summary |
-|---|---|---|
-| 1.0 | 2026-07-28 | Contrato inicial aprovado |
+- 2026-07-28 — v2.0: Brasil apenas; mortalidade populacional obrigatória;
+  letalidade e uso de UTI suplementares; proxy UTI acima de 100% indisponível;
+  influenza apenas; períodos estabilizados e gráficos exatos.

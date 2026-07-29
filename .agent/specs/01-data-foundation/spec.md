@@ -1,164 +1,224 @@
 # Fundação de dados SRAG
 
-> Status: FINAL
+> Status: DRAFT
 > Tier: extended
-> Version: 1.0
+> Version: 2.0
 > Owner: Indicium HealthCare PoC
 > Created: 2026-07-28
 > Last Updated: 2026-07-28
 
 ## Summary
 
-Ingerir dados públicos do SIVEP-Gripe/Open DATASUS, capacidade de UTI do CNES e coberturas oficiais de influenza e COVID-19; validar, minimizar e materializar snapshots reproduzíveis em Parquet e DuckDB.
+Preparar snapshots oficiais fixados de SIVEP-Gripe, CNES, IBGE e PNI,
+normalizá-los de forma determinística, minimizar os dados e publicar um
+DuckDB analítico reproduzível para o relatório Brasil de SRAG.
 
 ## Problem
 
-As fontes são heterogêneas, extensas, sujeitas a atraso, duplicidade, códigos ignorados e campos ausentes. O agente não pode operar diretamente sobre arquivos brutos nem receber registros individualizados.
+As fontes possuem schemas, calendários, competências e códigos diferentes.
+Também contêm ausências, valores ignorados, datas inválidas e duplicatas.
+Tratá-las como intercambiáveis ou adiar seus contratos concretos faria as
+métricas dependerem de suposições não verificadas.
 
 ## Goals
 
-- **FR-DF-1:** Ingerir fontes por download ao vivo ou por arquivo local usando o mesmo contrato.
-- **FR-DF-2:** Validar schema e normalizar códigos, datas, geografia e tipos sem transformar desconhecido em negativo.
-- **FR-DF-3:** Deduplicar registros SIVEP-Gripe por regra documentada e contabilizar descartes.
-- **FR-DF-4:** Minimizar dados antes da camada analítica, preservando apenas campos necessários às métricas e uma chave técnica não exposta ao agente.
-- **FR-DF-5:** Produzir snapshots Parquet imutáveis e um DuckDB somente analítico.
-- **FR-DF-6:** Gerar manifesto com origem, timestamps, hashes, schema, contagens, rejeições, completude e data máxima válida.
-- **FR-DF-7:** Quarentenar entradas estruturalmente inválidas sem impedir o processamento de registros válidos.
-- **FR-DF-8:** Impedir a publicação de snapshot quando faltarem colunas críticas ou o arquivo não puder ser verificado.
+- **FR-DF-1:** Manter contrato verificado para cada entrada oficial de SIVEP,
+  CNES, IBGE e PNI.
+- **FR-DF-2:** Carregar somente snapshots locais fixados: SIVEP 2025 e 2026,
+  competência CNES completa aplicável, população IBGE aplicável e observação
+  oficial elegível da campanha de influenza 2026.
+- **FR-DF-3:** Normalizar o schema canônico mínimo Brasil sem converter
+  desconhecido ou ignorado em resposta negativa.
+- **FR-DF-4:** Aplicar deduplicação determinística, tratamento de invalidade
+  por campo, códigos de motivo e quarentena estrutural.
+- **FR-DF-5:** Expor somente dados analíticos minimizados; registros clínicos
+  e chaves técnicas não atravessam a fronteira consumida pelo agente.
+- **FR-DF-6:** Materializar DuckDB analítico somente leitura e manifestos
+  imutáveis com fontes, hashes, contagens, schemas e watermarks.
+- **FR-DF-7:** Calcular completude por métrica e aplicar estados de qualidade
+  e bloqueios estruturais.
+- **FR-DF-8:** Publicar atomicamente e preservar o último snapshot válido
+  quando contrato, hash, schema ou cobertura falhar.
+
+## Non-Functional Requirements
+
+- **NFR-DF-1:** Mesmos bytes de origem e mesmas versões de regra produzem
+  conteúdo normalizado e hashes idênticos.
+- **NFR-DF-2:** Toda saída é rastreável ao recurso, recuperação, watermark,
+  versão de schema e versão de transformação.
+- **NFR-DF-3:** Saídas, logs, fixtures e fronteiras agentivas não contêm
+  identificadores diretos nem registros clínicos linha a linha.
+- **NFR-DF-4:** Um benchmark documentado processa ao menos 165.000 linhas
+  SIVEP e registra tempo, pico de memória e contexto da máquina; o desafio não
+  define SLA de ingestão.
 
 ## Non-Goals
 
-- **NG-DF-1:** Corrigir manualmente registros clínicos.
-- **NG-DF-2:** Persistir nomes, documentos, endereços ou atributos sem uso analítico.
-- **NG-DF-3:** Oferecer acesso do LLM ao dado bruto ou linha a linha.
-- **NG-DF-4:** Executar carga incremental complexa; a PoC usa snapshots substituíveis e imutáveis.
+- aquisição ao vivo das fontes de saúde durante a geração do relatório;
+- recorte ou agregação por UF;
+- cobertura vacinal de COVID-19;
+- imputação clínica;
+- publicação de arquivos brutos ou snapshots completos;
+- migração automática e rollback de versões de schema.
 
 ## Scope
 
-Inclui adaptadores de fonte, schema canônico, regras de qualidade, quarentena, snapshots, manifesto e construção do DuckDB. Não inclui fórmulas epidemiológicas nem geração do relatório.
+O MVP opera somente em Brasil. Notícias não pertencem a este pacote e são a
+única aquisição ao vivo durante a geração do relatório.
 
-## Existing Context
+## Source Contracts and Finalization Gate
 
-- Repositório greenfield; o enunciado é o único artefato inicial.
-- Fontes-alvo: SIVEP-Gripe/Open DATASUS, CNES e dados oficiais de vacinação para influenza e COVID-19.
-- O identificador exato de cada arquivo/API é configuração versionada no manifesto, não constante espalhada no código.
-- Dados reais podem conter cerca de 100 colunas e 165 mil ou mais registros.
+O anexo [source-contracts.md](source-contracts.md) é normativo. Para cada
+entrada ele registra URL oficial, identificador, licença/reuso, recuperação,
+watermark, dicionário/schema, tamanho, SHA-256, linhas, encoding, delimitador,
+mapeamento canônico, semântica temporal/geográfica, códigos, deduplicação,
+falha e staleness.
 
-## Users and Workflows
-
-O operador executa `ingest` em modo `live` ou `snapshot`. A aplicação valida cada fonte, publica um conjunto consistente quando os contratos mínimos são satisfeitos e informa qualidade e watermark temporal.
+Este spec permanece `DRAFT` enquanto qualquer contrato ou a fixture real
+reduzida estiver `UNVERIFIED`. A ausência de evidência reabre o contrato; não
+é resolvida silenciosamente no código.
 
 ## Proposed Behavior
 
-1. Receber configuração de fontes e diretório de saída.
-2. Baixar para área temporária ou abrir arquivo local.
-3. Calcular hash do bruto e capturar metadados de origem.
-4. Validar encoding, delimitador, colunas críticas e tipos conversíveis.
-5. Projetar para schema canônico, normalizar e aplicar regras temporais/geográficas.
-6. Deduplicar e separar rejeições com código de motivo.
-7. Remover campos não permitidos.
-8. Materializar Parquet e DuckDB em diretório identificado pelo snapshot ID.
-9. Escrever manifesto por último; sua presença marca publicação atômica bem-sucedida.
+### Inputs
+
+1. CSVs SIVEP-Gripe 2025 e 2026, necessários para os 12 meses completos.
+2. Competência mensal CNES completa mais recente compatível com o período.
+3. Estimativa oficial IBGE da população do Brasil aplicável.
+4. Observação oficial PNI mais recente da campanha de influenza 2026,
+   publicada até o `as_of` solicitado.
+
+Cada execução recebe caminhos locais e hashes esperados. Nenhuma URL de fonte
+de saúde é chamada pelo runtime de relatório.
+
+### Canonical Model
+
+Campos preservados antes da agregação:
+
+- SIVEP: chave de notificação, atualização, início dos sintomas, internação,
+  entrada e saída de UTI, evolução, data da evolução, UF de residência e UF de
+  internação;
+- CNES: competência, UF do estabelecimento, código/categoria de UTI e leitos
+  existentes compatíveis;
+- população: ano, geografia e população oficial;
+- vacinação: campanha, imunobiológico, grupos-alvo, período, geografia de
+  residência, numerador, denominador, cobertura publicada, atualização e
+  fonte.
+
+As UFs permanecem apenas para validar/filtrar o agregado nacional e alinhar
+residência/estabelecimento; não criam saída regional no MVP. A chave SIVEP é
+usada somente antes da agregação e não aparece no DuckDB agent-facing.
+
+### Normalization, Deduplication, and Quarantine
+
+- desconhecido, ignorado e ausente permanecem distintos de “não”;
+- valores clínicos ausentes não são imputados;
+- datas impossíveis, futuras ou com ordem inválida são anuladas ou rejeitadas
+  conforme matriz de campo, sempre com código de motivo;
+- registros sem estrutura mínima vão para quarentena;
+- duplicatas usam chave de notificação, atualização mais recente, maior
+  completude e desempate estável;
+- aceites, exclusões, nulificações, quarentenas e duplicatas são contados por
+  fonte, campo, métrica e motivo.
+
+### Quality
+
+Cada métrica recebe a completude dos campos dos quais depende:
+
+- `>= 90%`: valor disponível;
+- `>= 70%` e `< 90%`: valor disponível com aviso proeminente;
+- `< 70%`: métrica indisponível.
+
+Coluna crítica ausente, hash inválido ou período não coberto bloqueia o
+snapshot ou a seção afetada independentemente da porcentagem. Os limiares são
+guardrails da PoC, não padrões epidemiológicos oficiais. O snapshot de
+referência precisa manter disponíveis as quatro métricas e as duas séries.
+
+### Publication
+
+Arquivos candidatos são escritos fora do diretório publicado. Manifesto,
+hashes, schema, contagens e verificações são concluídos antes da troca
+atômica. Falha preserva o último snapshot válido e registra motivo estruturado.
 
 ## Interfaces and Data
 
-### Comando lógico
+Comando lógico de preparação:
 
 ```text
-ingest(mode, source_config, output_dir) -> SnapshotManifest
+srag-report prepare-data --contracts source-contracts.yml --output data/snapshots
 ```
 
-### Manifesto mínimo
+Saídas lógicas:
 
-```json
-{
-  "snapshot_id": "sha256:...",
-  "created_at": "ISO-8601",
-  "sources": [{"name": "sivep", "uri": "...", "sha256": "...", "retrieved_at": "..."}],
-  "watermarks": {"srag": "YYYY-MM-DD", "cnes": "YYYY-MM", "influenza": "...", "covid19": "..."},
-  "tables": [{"name": "srag_cases", "rows": 1, "schema_version": "1"}],
-  "quality": {"accepted": 1, "rejected": 0, "duplicates": 0, "field_completeness": {}},
-  "status": "published"
-}
+```text
+data/snapshots/<snapshot_id>/
+  analytics.duckdb
+  manifest.json
+  quality.json
 ```
 
-### Campos canônicos mínimos
+O manifesto contém `snapshot_id`, versões, arquivos/fontes, SHA-256,
+watermarks, linhas recebidas/aceitas/rejeitadas/deduplicadas, schemas,
+qualidade e estado de publicação.
 
-- SRAG: chave técnica, data de sintomas, data de internação, entrada/saída de UTI, evolução, data de evolução e UF.
-- CNES: competência, UF, categoria de leito UTI, quantidade disponível aplicável.
-- Vacinação: vacina, esquema/dose, período, UF, numerador, denominador, população-alvo, data de atualização e fonte.
+## Failure Handling
 
-## Alternatives Considered
+| Falha | Resultado |
+|---|---|
+| contrato, recurso ou hash não verificado | não iniciar ingestão |
+| coluna crítica ausente ou schema incompatível | rejeitar candidato |
+| registro estruturalmente inválido | quarentenar e contar |
+| campo não crítico inválido | anular conforme matriz e contar |
+| período insuficiente | bloquear apenas os resultados dependentes |
+| publicação parcial | não selecionar candidato; preservar último válido |
 
-- **Pandas + CSV em runtime:** simples, mas repete limpeza e expõe detalhe demais ao agente.
-- **PostgreSQL:** robusto, porém adiciona infraestrutura desnecessária à PoC.
-- **Parquet + DuckDB:** escolhido pela execução local, consultas analíticas e snapshots portáveis.
+## Security and Compliance
 
-## Edge Cases and Failure Handling
+Dados brutos e completos ficam fora do Git. Somente fixtures pequenas,
+permitidas e minimizadas podem ser versionadas. Segredos, registros clínicos,
+chaves técnicas, payloads brutos e o documento restrito do desafio não entram
+em logs, artefatos públicos ou commits.
 
-- Coluna crítica ausente: falhar sem publicar snapshot.
-- Coluna opcional ausente: publicar com completude zero e limitação registrada.
-- Data inválida/invertida: anular o campo ou rejeitar conforme matriz versionada; sempre contabilizar.
-- UF inválida: quarentena.
-- Código ignorado: mapear para desconhecido, não para “não”.
-- Duplicata: manter registro conforme precedência de atualização definida e contabilizar removidos.
-- Download interrompido/hash divergente: descartar temporário e manter último snapshot publicado.
-- Uma fonte vacinal indisponível: publicar as demais somente se o manifesto marcar explicitamente a ausência; nunca reutilizar dado antigo sem sua data.
+## Observability and Capacity
 
-## Risks and Constraints
-
-- **NFR-DF-1:** Processar o volume descrito em uma estação local sem carregar colunas descartadas na camada analítica.
-- **NFR-DF-2:** Execuções com as mesmas entradas e versão de regras devem produzir os mesmos hashes de tabelas normalizadas.
-- **NFR-DF-3:** Nenhum artefato consumido pelo agente deve conter PII ou campos não listados no schema canônico.
-- **NFR-DF-4:** O último snapshot válido deve permanecer utilizável após falha de atualização.
-
-## Threats and Security Considerations
-
-Validar URL/configuração contra allowlist, limitar tamanho de download, impedir path traversal, não executar conteúdo das fontes e evitar fórmulas CSV. Segredos, se necessários, vêm do ambiente e não entram no manifesto.
-
-## Rollout, Migration, and Rollback
-
-Primeira versão cria o schema `v1`. Nova versão de schema gera novo snapshot e mantém o anterior. Rollback seleciona explicitamente um snapshot publicado anterior; nunca sobrescreve artefatos.
-
-## Observability
-
-- Contagens por fonte, aceitos, rejeitados, duplicados e duração por etapa.
-- Completude dos campos críticos.
-- Watermarks e idade das fontes.
-- Erros estruturados por código, sem conteúdo sensível.
-
-## Capacity and Operations
-
-Arquivos temporários são removidos após sucesso ou falha. O pipeline aceita snapshots pequenos de fixture para testes e snapshot completo para demo.
-
-## Compliance
-
-Dados públicos de saúde ainda exigem minimização e prevenção de reidentificação. A PoC publica somente agregados e não constrói perfis individuais.
+Cada estágio registra fonte, versão, duração, contagens, códigos de qualidade e
+hashes, sem linhas clínicas. O benchmark de `NFR-DF-4` documenta a máquina e
+mede o volume aproximado citado pelo desafio.
 
 ## Acceptance Criteria
 
-- **AC-DF-1 (FR-DF-1):** Modo ao vivo e modo local produzem o mesmo schema canônico para conteúdo equivalente.
-- **AC-DF-2 (FR-DF-2, FR-DF-7):** Valores ignorados, datas inválidas e UF inválida são tratados e contabilizados conforme regra.
-- **AC-DF-3 (FR-DF-3):** Duplicatas de fixture produzem uma linha canônica e contador de remoção correto.
-- **AC-DF-4 (FR-DF-4, NFR-DF-3):** Tabelas analíticas não contêm campos fora da allowlist.
-- **AC-DF-5 (FR-DF-5, FR-DF-6):** Snapshot publicado contém Parquet, DuckDB e manifesto verificável por hash.
-- **AC-DF-6 (FR-DF-8, NFR-DF-4):** Falha estrutural não publica parcial nem remove o último snapshot válido.
-- **AC-DF-7 (FR-DF-6):** Manifesto informa watermarks e completude das quatro famílias de dados.
-- **AC-DF-8 (NFR-DF-2):** Duas execuções com entradas e versão de regras idênticas produzem hashes idênticos das tabelas normalizadas.
+- **AC-DF-1 (FR-DF-1, NFR-DF-2):** Os quatro contratos e a fixture real
+  reduzida são verificáveis antes da promoção do status.
+- **AC-DF-2 (FR-DF-2):** Somente as quatro famílias fixadas são carregadas e
+  cada saída identifica seu recurso exato.
+- **AC-DF-3 (FR-DF-3, FR-DF-4):** Normalização, deduplicação, invalidade e
+  quarentena seguem regras determinísticas e contabilizadas.
+- **AC-DF-4 (FR-DF-5, NFR-DF-3):** Nenhum identificador, chave técnica ou
+  registro clínico atravessa a fronteira analítica.
+- **AC-DF-5 (FR-DF-6, NFR-DF-1, NFR-DF-2):** DuckDB e manifestos são
+  reproduzíveis e verificáveis.
+- **AC-DF-6 (FR-DF-7):** Limiares e bloqueios estruturais produzem os estados
+  definidos.
+- **AC-DF-7 (FR-DF-8):** Falha de candidato preserva o último snapshot válido.
+- **AC-DF-8 (NFR-DF-4):** O benchmark processa ao menos 165.000 linhas e
+  registra as medições exigidas.
 
 ## Verification Plan
 
-- Unit: parsers, normalizadores, datas, códigos e deduplicação.
-- Integration: ingestão de fixtures de todas as fontes e inspeção do DuckDB.
-- End-to-end: dois modos de entrada com conteúdo equivalente geram tabelas canônicas equivalentes.
-- Operational: simular download truncado e comprovar preservação do snapshot anterior.
+- contratos e schemas por fonte;
+- fixtures de códigos desconhecidos, datas inválidas, duplicatas e quarentena;
+- teste de minimização e busca de campos proibidos;
+- duas execuções idênticas para comparar hashes;
+- falhas de hash, schema, cobertura e publicação;
+- benchmark com ao menos 165.000 linhas.
 
 ## Open Questions
 
-Nenhuma questão bloqueadora. Identificadores concretos de distribuição/API pertencem à configuração da fonte e devem ser validados na primeira tarefa de implementação sem alterar este contrato.
+Os recursos, códigos e metadados marcados `UNVERIFIED` no anexo são
+bloqueadores com evidência e dono explícitos. Não há questão de produto aberta.
 
 ## Change Log
 
-| Version | Date | Summary |
-|---|---|---|
-| 1.0 | 2026-07-28 | Contrato inicial aprovado |
+- 2026-07-28 — v2.0: reduz escopo ao Brasil e snapshots fixados; torna
+  contratos oficiais e fixture um gate explícito; remove COVID-19, paridade
+  live/local e rollback do MVP.

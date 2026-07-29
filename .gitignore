@@ -1,0 +1,25 @@
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local data and generated runs
+data/raw/
+data/snapshots/
+runs/
+
+# Agent-local state and restricted challenge material
+.omc/
+.superpowers/
+Desafio de GenAI.txt
+
+# Operating-system metadata
+.DS_Store

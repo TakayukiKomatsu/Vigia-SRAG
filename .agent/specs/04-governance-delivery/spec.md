@@ -1,159 +1,217 @@
 # Governança, transparência e entrega da PoC SRAG
 
-> Status: FINAL
+> Status: DRAFT
 > Tier: extended
-> Version: 1.0
+> Version: 2.0
 > Owner: Indicium HealthCare PoC
 > Created: 2026-07-28
 > Last Updated: 2026-07-28
 
 ## Summary
 
-Tornar cada execução auditável, a aplicação reproduzível e o repositório avaliável por meio de logs estruturados, guardrails verificáveis, documentação, demonstração local e diagrama conceitual em PDF.
+Definir evidência estrita para a demonstração de referência, separar testes de
+degradação, tornar o repositório reproduzível e seguro para publicação e
+entregar README, relatório HTML de exemplo e diagrama conceitual em PDF.
 
 ## Problem
 
-Uma PoC pode produzir um relatório plausível sem permitir verificar origem, decisões ou falhas. O desafio avalia explicitamente governança, transparência, guardrails, dados sensíveis, clean code, README e PDF de arquitetura.
+Uma PoC pode parecer completa mesmo sem métrica exigida, notícia live,
+comentário válido, auditoria íntegra ou reprodução pública. Aceitar um
+relatório degradado como referência esconderia exatamente os riscos avaliados
+pelo desafio.
 
 ## Goals
 
-- **FR-GD-1:** Atribuir run ID único e registrar eventos estruturados de cada nó/tool/guardrail.
-- **FR-GD-2:** Vincular relatório a parâmetros, snapshots, versões de fórmula, grafo, prompt, modelo e notícias.
-- **FR-GD-3:** Registrar decisões e falhas sem persistir PII, segredos ou registros individuais.
-- **FR-GD-4:** Permitir consultar uma trilha de auditoria por run ID e reconstruir as entradas autorizadas.
-- **FR-GD-5:** Disponibilizar execução local documentada para atualização de dados e geração de relatório Brasil/UF.
-- **FR-GD-6:** Documentar arquitetura, fontes, fórmulas, qualidade, guardrails, privacidade, limitações, testes e decisões no README/relatórios.
-- **FR-GD-7:** Incluir PDF legível do diagrama conceitual com orquestrador, tools, LLM, banco, fontes de dados/notícias e fluxos.
-- **FR-GD-8:** Manter configuração exemplo sem segredo e ignorar artefatos sensíveis/volumosos do Git.
-- **FR-GD-9:** Fornecer demo reproduzível com snapshots pequenos ou instruções de obtenção, sem publicar dados proibidos.
-- **FR-GD-10:** Validar fim a fim que relatórios Brasil e UF atendem às exigências do desafio.
+- **FR-GD-1:** Validar golden run estrito com quatro métricas, dois
+  suplementos, dois gráficos, notícia live, comentário OpenAI válido e bundle
+  sanitizado completo.
+- **FR-GD-2:** Manter suítes separadas de degradação e segurança que não
+  substituem o golden run.
+- **FR-GD-3:** Fornecer quickstarts determinístico e live; somente o live
+  requer `OPENAI_API_KEY`.
+- **FR-GD-4:** Publicar README completo e HTML de referência sanitizado com
+  rótulos live/não-live inequívocos.
+- **FR-GD-5:** Publicar fonte e PDF legível do diagrama conceitual com todos os
+  componentes, fluxos e limites de confiança.
+- **FR-GD-6:** Aplicar pytest, Ruff, mypy, GitHub Actions, Gitleaks,
+  `.gitignore` e higiene do repositório público.
+- **FR-GD-7:** Verificar URL GitHub pública por clone limpo não autenticado e
+  preservar evidência de release.
+- **FR-GD-8:** Manter 28 tarefas Must nos Dias 1–5 e impedir Stretch antes de
+  todos os gates obrigatórios.
+
+## Non-Functional Requirements
+
+- **NFR-GD-1:** Ausência de evento crítico de auditoria impede publicação.
+- **NFR-GD-2:** Artefatos liberados não contêm segredo, documento restrito,
+  registro clínico, chave técnica, payload bruto ou corpo integral de artigo.
+- **NFR-GD-3:** Quickstart determinístico funciona em clone limpo sem editar
+  código, credencial ou chamada live de OpenAI/RSS.
+- **NFR-GD-4:** O PDF é legível e todos os componentes/limites exigidos podem
+  ser identificados visualmente.
+- **NFR-GD-5:** Qualidade, CI e secret scan passam no commit de release.
 
 ## Non-Goals
 
-- **NG-GD-1:** Observabilidade de produção, SIEM ou autenticação multiusuário.
-- **NG-GD-2:** Publicar chaves de API ou o CSV bruto quando termos/tamanho não permitirem.
-- **NG-GD-3:** Alegar conformidade clínica, regulatória ou disponibilidade em tempo real estrita.
-- **NG-GD-4:** Ocultar limitações para melhorar aparência da demo.
+- observabilidade de produção, SIEM ou autenticação multiusuário;
+- SLA de produção;
+- relatório em PDF;
+- dashboards ou deploy em nuvem;
+- completar itens Stretch antes do MVP.
 
-## Scope
+## Ownership and Dependencies
 
-Inclui store de auditoria, política de logging, CLI/app local, README, arquivo de configuração exemplo, diagrama-fonte e PDF, checklist de segurança e smoke tests de entrega.
+SDD 03 cria `AuditSink` e o run bundle. Este pacote apenas valida, documenta e
+libera esses artefatos. Assim, a auditoria existe desde o primeiro nó e não há
+dependência circular.
 
-## Existing Context
+Este spec só recebe `FINAL` quando SDDs 01, 02 e 03 estiverem `FINAL` com suas
+evidências registradas.
 
-Depende dos SDDs 01–03. O repositório começou sem estrutura e deve ser público ao final. O desafio prevê cinco dias e aceita PoC, mas todos os itens obrigatórios precisam de evidência ou limitação explícita.
+## Strict Golden Run
 
-## Users and Workflows
+O relatório de referência passa somente se contiver:
 
-- Desenvolvedor instala dependências, configura fontes/LLM e executa ingestão.
-- Avaliador pode usar snapshot demonstrativo, gerar relatório e consultar auditoria por run ID.
-- Usuário escolhe Brasil/UF e recebe artefato com fontes e limitações.
+1. aumento de casos real e disponível;
+2. mortalidade populacional real e disponível;
+3. pressão estimada de SRAG sobre capacidade registrada de UTI real e
+   disponível;
+4. cobertura oficial de influenza 2026 real e disponível;
+5. letalidade hospitalar e uso de UTI suplementares;
+6. gráfico diário completo de 30 dias;
+7. gráfico mensal completo de 12 meses;
+8. ao menos uma notícia recente válida coletada ao vivo;
+9. claims OpenAI estruturadas e validadas;
+10. fontes, métodos, watermarks, qualidade, limitações e `run_id`;
+11. `request.json`, `evidence.json`, `audit.jsonl`, `charts/`, `report.html` e
+    `manifest.json` íntegros e sanitizados.
 
-## Proposed Behavior
+Qualquer ausência falha o golden. Métrica indisponível não satisfaz o item
+correspondente.
 
-### Auditoria
+## Degradation and Security
 
-Eventos append-only em JSONL ou banco local com schema versionado:
+Casos de notícia, OpenAI ou métrica indisponível e falhas de auditoria são
+testados separadamente segundo SDD 03. Um resultado degradado pode demonstrar
+resiliência, mas nunca é selecionado como relatório de referência.
 
-- `run_started`, `request_validated`, `snapshot_selected`;
-- `node_started/completed/failed`;
-- `tool_called/completed/failed` com entradas/saídas resumidas;
-- `guardrail_passed/blocked`;
-- `evidence_validated`, `narrative_validated`;
-- `report_published` ou `run_failed`.
+A suíte cobre prompt injection, SQL arbitrário, URL inválida, citação/número
+inventado, vazamento de campo, segredo e evento crítico ausente.
 
-Cada evento contém run ID, timestamp UTC, tipo, componente/versão, duração quando aplicável e payload sanitizado. Hashes podem provar vínculo com artefatos sem copiar conteúdo.
+## Quickstarts
 
-### Repositório e execução
+### Deterministic
 
-README apresenta quickstart, arquitetura, data flow, configuração, comandos, relatório de exemplo, metodologias, fontes e limitações. `.env.example` lista variáveis sem valores secretos. `.gitignore` cobre `.env`, bruto, snapshots completos, logs e saídas locais, mantendo fixtures permitidas.
+- OpenAI fake;
+- RSS fixo;
+- fixture permitida;
+- nenhuma credencial;
+- nenhuma chamada OpenAI/RSS live;
+- sem edição de código;
+- relatório marcado como demonstração não-live.
 
-### PDF de arquitetura
+### Live
 
-O diagrama-fonte versionado gera PDF determinístico e legível. O PDF mostra o Agente Principal, tools de métricas/gráficos/notícias, LLM, DuckDB, ingestão, fontes SIVEP-Gripe/CNES/vacinação/notícias, renderer e auditoria, com setas de fluxo e limite de dados sensíveis.
+- requer somente `OPENAI_API_KEY`;
+- usa o modelo padrão aprovado e registra seu nome exato;
+- consulta Google News RSS durante a execução;
+- usa snapshots de saúde fixados;
+- produz candidato ao golden run, sujeito a todos os gates.
 
-## Interfaces and Data
+## README and Reference Artifact
 
-```text
-audit(event_type, run_id, component, sanitized_payload) -> AuditEventId
-show_audit(run_id) -> AuditTrail
-generate_report --uf SP --as-of YYYY-MM-DD
-ingest --mode live|snapshot
-```
+O README cobre instalação, configuração, arquitetura, fontes e aquisição,
+fórmulas, períodos, qualidade, grafo, tools, OpenAI, notícias, auditoria,
+guardrails, privacidade, testes, quickstarts, limitações e leitura do exemplo.
+O HTML de referência é sanitizado e informa se é live.
 
-O schema de auditoria mantém allowlist por evento; serialização arbitrária de objetos é proibida.
+## Architecture PDF
 
-## Alternatives Considered
+O diagrama mostra:
 
-- Logs de texto: fáceis, mas difíceis de consultar e validar.
-- Tracing SaaS: útil, porém cria dependência e possível exposição de saúde; não necessário para a PoC.
-- Store local estruturado: escolhido por portabilidade e controle.
+- SIVEP, CNES, IBGE e PNI;
+- Google News RSS;
+- DuckDB;
+- tools de métricas, gráficos e notícias;
+- LangGraph orquestrador;
+- OpenAI e validador;
+- renderer HTML;
+- `AuditSink` e run bundle;
+- fluxos, agregação e limites de dados sensíveis.
 
-## Edge Cases and Failure Handling
+O PDF é o único PDF obrigatório.
 
-- Falha ao gravar evento crítico antes do LLM: interromper para não produzir relatório sem auditoria.
-- Falha ao gravar evento não crítico após artefato: marcar execução como incompleta e não alegar publicação auditável.
-- Artefato ausente/hash divergente: `show_audit` sinaliza integridade inválida.
-- Segredo detectado em configuração versionada: verificação falha.
-- PDF ilegível/sem componente exigido: entrega falha.
-- Fonte ao vivo indisponível: quickstart oferece snapshot demonstrativo com watermark explícito.
+## Repository and CI
 
-## Risks and Constraints
+O repositório inclui pacote Python tipado, `pyproject.toml` com dependências
+fixadas, configuração exemplo, fixtures pequenas permitidas, README, HTML
+sanitizado, fonte/PDF de arquitetura e GitHub Actions.
 
-- **NFR-GD-1:** Eventos críticos devem ser persistidos antes da transição seguinte.
-- **NFR-GD-2:** Auditoria não pode conter campos fora das allowlists nem payload bruto de notícia/dado clínico.
-- **NFR-GD-3:** Uma pessoa com Python e as credenciais documentadas deve reproduzir a demo seguindo o README.
-- **NFR-GD-4:** PDF deve abrir sem erro e permanecer legível em página A4 ou Letter.
-- **NFR-GD-5:** Código deve separar domínio, infraestrutura e apresentação, usar tipagem e manter interfaces estreitas.
+Checks: pytest, Ruff, mypy e Gitleaks. `.gitignore` exclui `.env`, dados brutos,
+snapshots completos, run bundles locais, `.omc/`, `.superpowers/` e
+`Desafio de GenAI.txt`. Antes de publicar, arquivos staged e histórico são
+inspecionados para segredo e material restrito.
 
-## Threats and Security Considerations
+## Public Release Gate
 
-Principais riscos: segredos no Git, PII no log, artefatos brutos publicados, relatório manipulado e dependência comprometida. Usar allowlists, arquivos ignorados, scanning de segredos, hashes, lockfile e dependências mínimas.
+Uma pessoa sem autenticação deve conseguir:
 
-## Rollout, Migration, and Rollback
+1. acessar a URL pública;
+2. clonar o commit de release;
+3. seguir o quickstart determinístico sem editar código;
+4. localizar o `run_id`, evidências e HTML de exemplo;
+5. verificar o golden live sanitizado já versionado.
 
-Entrega local versionada. Mudança do schema de auditoria incrementa versão; leitor suporta apenas versões declaradas e falha explicitamente. Artefatos antigos são imutáveis.
+Release só termina quando todos os passos e o smoke live forem registrados.
 
-## Observability
+## Five-Day Plan
 
-A própria auditoria é o mecanismo principal. Resumo por execução inclui duração, status, nós/tools, guardrails, evidências, artefatos e erros.
+- Dia 1: contratos, pacote e quatro fontes no DuckDB.
+- Dia 2: métricas, suplementos, qualidade, séries e gráficos.
+- Dia 3: tools, LangGraph, RSS, OpenAI, validação, auditoria e HTML.
+- Dia 4: golden/degradação, README, exemplo e arquitetura PDF.
+- Dia 5: clone limpo, CI, secret scan, smoke live, revisão visual e publicação.
 
-## Capacity and Operations
-
-Rotação simples por arquivo/run ID; logs e relatórios locais não entram no Git. Fixtures e um relatório de exemplo sanitizado podem entrar no repositório.
-
-## Compliance
-
-README deve explicar minimização, finalidade, limitações, ausência de orientação médica e proveniência das fontes. Conteúdo do enunciado não deve ser reproduzido integralmente no repositório sem autorização.
+Stretch não começa antes dos 28 itens Must e do golden estrito.
 
 ## Acceptance Criteria
 
-- **AC-GD-1 (FR-GD-1, FR-GD-2):** Execução bem-sucedida possui sequência completa de eventos vinculada a parâmetros, versões, snapshots e artefatos.
-- **AC-GD-2 (FR-GD-3, NFR-GD-2):** Auditoria e payloads não contêm PII, segredos nem linhas brutas.
-- **AC-GD-3 (FR-GD-4):** Consulta por run ID retorna ordem, decisões, evidências e integridade dos artefatos.
-- **AC-GD-4 (FR-GD-5, FR-GD-9, NFR-GD-3):** Quickstart executado em ambiente limpo gera relatório demonstrativo.
-- **AC-GD-5 (FR-GD-6):** README contém todas as seções exigidas e definições/limitações das métricas.
-- **AC-GD-6 (FR-GD-7, NFR-GD-4):** PDF abre e contém todos os componentes e interações exigidos.
-- **AC-GD-7 (FR-GD-8):** Repositório não rastreia segredos, dados brutos proibidos, snapshots completos ou logs locais.
-- **AC-GD-8 (FR-GD-10):** Smoke tests Brasil e UF produzem quatro categorias de métricas, duas coberturas, dois gráficos, fontes e auditoria, admitindo indisponibilidade apenas com motivo verificável.
-- **AC-GD-9 (NFR-GD-5):** Verificações de estilo, tipagem e testes do projeto passam.
-- **AC-GD-10 (FR-GD-1, NFR-GD-1):** Falha ao persistir evento crítico interrompe a execução antes do LLM ou da publicação.
+- **AC-GD-1 (FR-GD-1, NFR-GD-1, NFR-GD-2):** Golden contém os onze itens,
+  integridade e sanitização.
+- **AC-GD-2 (FR-GD-2, NFR-GD-1):** Degradação/segurança seguem seus resultados
+  sem elegibilidade golden.
+- **AC-GD-3 (FR-GD-3, NFR-GD-3):** Quickstart determinístico funciona no clone
+  limpo sem credencial, rede live ou edição.
+- **AC-GD-4 (FR-GD-3):** Quickstart live requer somente a chave OpenAI e
+  registra modelo/RSS live.
+- **AC-GD-5 (FR-GD-4):** README e HTML sanitizado cobrem documentação e rótulo.
+- **AC-GD-6 (FR-GD-5, NFR-GD-4):** PDF é legível e contém todos os componentes
+  e limites.
+- **AC-GD-7 (FR-GD-6, NFR-GD-2, NFR-GD-5):** Qualidade, CI, Gitleaks, staged
+  files, histórico e ignores passam.
+- **AC-GD-8 (FR-GD-7):** URL pública e clone não autenticado reproduzem a demo
+  e expõem evidência de release.
+- **AC-GD-9 (FR-GD-8):** O backlog possui 7+7+8+6 tarefas completas nos Dias
+  1–5 e Stretch isolado.
 
 ## Verification Plan
 
-- Unit: sanitização e schema de eventos.
-- Integration: trilha completa e consulta por run ID.
-- Security: scanner de segredos e assertions negativas nos logs/payloads.
-- Documentation: executar comandos do README em ambiente limpo.
-- Visual: abrir PDF e relatório; confirmar legibilidade e componentes.
-- End-to-end: relatório Brasil e SP com auditoria íntegra.
+- golden end-to-end estrito;
+- degradação e segurança separadas;
+- quickstart determinístico em clone limpo;
+- smoke manual live;
+- inspeção do README/HTML e do PDF renderizado;
+- pytest, Ruff, mypy, CI e Gitleaks;
+- staged files, histórico, URL pública e clone não autenticado;
+- validação mecânica de IDs e 28 tarefas.
 
 ## Open Questions
 
-Nenhuma bloqueadora. Hospedagem GitHub pública é ação externa final; o repositório local deve ficar pronto para publicação sem exigir mudança de código.
+Os gates upstream e a URL pública ainda não existem; são bloqueadores
+explícitos. Este spec permanece `DRAFT`.
 
 ## Change Log
 
-| Version | Date | Summary |
-|---|---|---|
-| 1.0 | 2026-07-28 | Contrato inicial aprovado |
+- 2026-07-28 — v2.0: golden estrito; degradação separada; HTML apenas;
+  quickstarts distintos; CI/secret scan; PDF conceitual e publicação pública
+  verificáveis; 28 tarefas em cinco dias.

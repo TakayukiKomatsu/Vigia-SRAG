@@ -1,29 +1,12 @@
-# Tarefas — Agente e relatório fundamentado
+# Tarefas — Agente e relatório fundamentado v2
 
-> Derivado de spec.md versão 1.0
+> Must: 8 tarefas. Todas no Dia 3. Stretch fica em `../stretch-backlog.md`.
 
-## Preparação
-
-- [ ] **T-AR-1 [FR-AR-2]:** Definir estado tipado do LangGraph, nós, transições, rotas de degradação e versões.
-- [ ] **T-AR-2 [FR-AR-4]:** Selecionar adaptador de busca atual e fontes permitidas; documentar contrato, credenciais e limites.
-- [ ] **T-AR-3 [FR-AR-6, FR-AR-7]:** Definir schema do payload/saída LLM e política de fundamentação e linguagem.
-
-## Implementação
-
-- [ ] **T-AR-4 [FR-AR-1]:** Implementar modelo e guardrails da solicitação Brasil/UF, data e janela.
-- [ ] **T-AR-5 [FR-AR-3]:** Implementar tools tipadas de métricas e gráficos sobre os serviços do SDD 02.
-- [ ] **T-AR-6 [FR-AR-4]:** Implementar tool de notícias com allowlist, normalização, deduplicação, janela e metadados.
-- [ ] **T-AR-7 [FR-AR-5]:** Implementar `EvidenceBundle` imutável e validação pré-LLM.
-- [ ] **T-AR-8 [FR-AR-2, FR-AR-9]:** Implementar grafo e rotas de sucesso/falha/degradação.
-- [ ] **T-AR-9 [FR-AR-6, NFR-AR-6]:** Implementar adaptador de LLM configurável e fake determinístico.
-- [ ] **T-AR-10 [FR-AR-7]:** Implementar validação pós-LLM de números, IDs de evidência, citações e linguagem.
-- [ ] **T-AR-11 [FR-AR-8]:** Implementar renderer HTML/PDF usando objetos métricos e gráficos como fontes autoritativas.
-- [ ] **T-AR-12 [FR-AR-10]:** Aplicar limites de tools, tentativas, janela, tokens e timeout.
-
-## Verificação
-
-- [ ] **T-AR-13 [AC-AR-1, AC-AR-2]:** Verificar rota principal e schemas restritos das tools.
-- [ ] **T-AR-14 [AC-AR-3]:** Verificar filtros de notícia, deduplicação, URL/fonte/data e prompt injection.
-- [ ] **T-AR-15 [AC-AR-4, AC-AR-5, AC-AR-9]:** Inspecionar payload LLM e rejeitar número/citação inventados.
-- [ ] **T-AR-16 [AC-AR-6]:** Gerar relatório completo em fixture e verificar todas as seções obrigatórias.
-- [ ] **T-AR-17 [AC-AR-7, AC-AR-8]:** Simular indisponibilidade de notícia/LLM e estouro de limites; verificar degradação e auditoria.
+- [ ] **T-AR-1 [P0, D3, CH-11, CH-12, CH-13, FR-AR-1, FR-AR-2, FR-AR-10, AC-AR-1, AC-AR-10, depends: T-MT-7]:** Implementar request/estado tipados, dez transições, `AuditSink` e rotas terminais/degradadas. **Evidence:** testes de request, transição e auditoria verde.
+- [ ] **T-AR-2 [P0, D3, CH-01, CH-02, CH-11, CH-14, FR-AR-3, AC-AR-2, depends: T-AR-1]:** Implementar tools de métricas e gráficos com schemas estreitos, acesso somente leitura e uma chamada normal. **Evidence:** testes de contrato e rejeição de SQL/campos verdes.
+- [ ] **T-AR-3 [P0, D3, CH-01, CH-03, CH-14, FR-AR-4, AC-AR-3, AC-AR-4, depends: T-AR-1]:** Implementar Google News RSS com query/locale/allowlist, redirects, datas, deduplicação, injeção, limite e retry. **Evidence:** suíte RSS fixa verde.
+- [ ] **T-AR-4 [P0, D3, CH-01, CH-11, CH-13, CH-15, FR-AR-2, FR-AR-5, NFR-AR-5, AC-AR-1, AC-AR-5, depends: T-AR-2, T-AR-3]:** Validar e congelar `EvidenceBundle` imutável e sanitizado. **Evidence:** schema, hash e varredura de privacidade verdes.
+- [ ] **T-AR-5 [P0, D3, CH-01, CH-13, FR-AR-6, FR-AR-7, FR-AR-9, NFR-AR-1, NFR-AR-2, AC-AR-6, AC-AR-7, AC-AR-9, depends: T-AR-4]:** Implementar adaptador OpenAI, claims estruturadas, validador, limites e fallback factual. **Evidence:** fake OpenAI cobre sucesso, rejeição e falha.
+- [ ] **T-AR-6 [P0, D3, CH-01, CH-11, CH-12, FR-AR-8, FR-AR-10, AC-AR-8, AC-AR-10, depends: T-AR-5]:** Renderizar HTML e run bundle completo com hashes e gates críticos. **Evidence:** artefatos conhecidos e manifesto íntegro.
+- [ ] **T-AR-7 [P1, D3, CH-13, CH-15, CH-16, FR-AR-7, FR-AR-9, FR-AR-10, NFR-AR-3, NFR-AR-4, NFR-AR-5, NFR-AR-6, AC-AR-4, AC-AR-5, AC-AR-7, AC-AR-9, AC-AR-10, AC-AR-11, depends: T-AR-6]:** Cobrir determinismo, injeção, privacidade, timeout, retry, degradação e falha de auditoria. **Evidence:** suíte agentiva/security verde.
+- [ ] **T-AR-8 [P1, D3, CH-01, CH-03, CH-16, CH-19, FR-AR-4, FR-AR-6, NFR-AR-6, AC-AR-3, AC-AR-6, AC-AR-11, depends: T-AR-7]:** Executar smoke live do RSS e do modelo OpenAI configurado; registrar modelo/resultado sem promover status se falhar. **Evidence:** log sanitizado do smoke e decisão de gate.
