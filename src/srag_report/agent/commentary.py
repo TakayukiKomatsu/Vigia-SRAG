@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import json
-from copy import deepcopy
 from collections.abc import Sequence
+from copy import deepcopy
 from typing import Protocol, cast
 
 import openai
@@ -46,11 +46,13 @@ class CommentaryOutputInvalidError(ValueError):
 
 
 def commentary_evidence_ids(evidence: EvidenceBundle) -> tuple[str, ...]:
-    return tuple(sorted(
-        evidence_id
-        for evidence_id in evidence.evidence_ids()
-        if evidence_id.startswith(("metric:", "series:", "chart:"))
-    ))
+    return tuple(
+        sorted(
+            evidence_id
+            for evidence_id in evidence.evidence_ids()
+            if evidence_id.startswith(("metric:", "series:", "chart:"))
+        )
+    )
 
 
 def _provider_evidence_payload(evidence: EvidenceBundle) -> str:
@@ -103,7 +105,10 @@ def _provider_claims_to_domain(
 def _is_transient_provider_error(exc: Exception) -> bool:
     return isinstance(
         exc,
-        (openai.APIConnectionError, openai.APITimeoutError, openai.RateLimitError, openai.InternalServerError),
+        openai.APIConnectionError
+        | openai.APITimeoutError
+        | openai.RateLimitError
+        | openai.InternalServerError,
     )
 
 
@@ -231,7 +236,9 @@ class OpenAICommentaryAdapter:
                 parsed = response.output_parsed
                 if parsed is None:
                     raise RuntimeError("OpenAI response contained no parsed commentary")
-                domain = _provider_claims_to_domain(parsed, allowed_evidence_ids=allowed_evidence_ids)
+                domain = _provider_claims_to_domain(
+                    parsed, allowed_evidence_ids=allowed_evidence_ids
+                )
                 return CommentaryResult(
                     claims=validate_commentary_claims(domain.claims, evidence),
                     requested_model=self.requested_model,

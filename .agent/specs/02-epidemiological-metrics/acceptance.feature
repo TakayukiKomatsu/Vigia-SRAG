@@ -1,3 +1,8 @@
+# Document Status: DRAFT
+# Release Status: EXTERNAL-BLOCKED
+# Version: 2.2
+# Date: 2026-07-29
+
 @draft @metrics
 Feature: Métricas e gráficos epidemiológicos Brasil de SRAG
   Os cenários derivam do spec.md versão 2.2.

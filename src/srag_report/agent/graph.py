@@ -17,12 +17,11 @@ from ..metrics.time import resolve_as_of
 from ..reporting.bundle import RunWorkspace
 from ..reporting.html import render_report_html
 from ..tools.analytics import ChartsTool, MetricsTool
-from .commentary import CommentaryAdapter, generate_or_fallback
-from .commentary import commentary_evidence_ids
+from .commentary import CommentaryAdapter, commentary_evidence_ids, generate_or_fallback
 from .evidence import build_evidence_bundle, deterministic_fallback, validate_commentary_claims
 from .models import (
-    CommentaryResult,
     CommentaryFailureCode,
+    CommentaryResult,
     EventStatus,
     EvidenceBundle,
     NewsItem,

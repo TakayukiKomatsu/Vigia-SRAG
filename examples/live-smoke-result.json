@@ -1,27 +1,10 @@
 {
-  "recorded_at": "2026-07-29",
-  "google_news_rss": {
-    "status": "success",
-    "accepted_items": 1,
-    "sources": ["G1"]
-  },
-  "commentary": {
-    "status": "success",
-    "provider": "openrouter",
-    "requested_model": "openrouter/free",
-    "served_model": "google/gemma-4-26b-a4b-it:free",
-    "claim_count": 3,
-    "grounding_validation": "passed",
-    "fallback_used": false
-  },
-  "report_graph": {
-    "status": "success",
-    "fixture": "synthetic_test_fixture",
-    "strict_gate_eligible": true
-  },
-  "golden_status_promoted": false,
-  "promotion_blockers": [
-    "official_source_contracts",
-    "public_reference_bundle"
-  ]
+  "release": {"version": "2.2", "date": "2026-07-29", "status": "EXTERNAL-BLOCKED"},
+  "run": {"kind": "sanitized_live_summary", "snapshot_id": "official-20260727", "execution_mode": "live"},
+  "commentary": {"provider": "openrouter", "requested_model": "openrouter/free", "served_model": "nvidia/nemotron-3-super-120b-a12b:free", "validated_claim_count": 3, "fallback_used": false},
+  "rss": {"accepted_item_count": 1, "accepted_sources": ["G1"]},
+  "available_metrics": ["case_growth", "mortality_per_100k", "hospital_cfr", "icu_use"],
+  "unavailable_metrics": {"icu_pressure": "CNES source unavailable; no national occupancy claim", "influenza_coverage": "official PNI source unavailable"},
+  "gate": {"eligible": false, "failures": ["degraded_or_fallback", "incomplete_artifact_set", "metric_unavailable:influenza_coverage", "metric_quality_not_available:influenza_coverage", "metric_unavailable:icu_pressure", "metric_quality_not_available:icu_pressure", "monthly_series_incomplete", "chart_set_incomplete", "audit_node_order_invalid"], "meaning": "internal consistency and execution-evidence check; not cryptographic authenticity"},
+  "publication": {"public_release": "owner-only pending", "anonymous_clone": "blocked"}
 }

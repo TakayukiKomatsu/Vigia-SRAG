@@ -53,11 +53,28 @@ def check_spec_dir(spec_dir: Path) -> tuple[str, ...]:
     if not tasks:
         issues.append("missing_tasks_file")
     issues.extend(
-        _check_mapping(requirements, feature_requirements, "missing_acceptance_mapping", "unknown_acceptance_requirement")
+        _check_mapping(
+            requirements,
+            feature_requirements,
+            "missing_acceptance_mapping",
+            "unknown_acceptance_requirement",
+        )
     )
-    issues.extend(_check_mapping(requirements, task_requirements, "missing_task_mapping", "unknown_task_requirement"))
-    issues.extend(_check_mapping(acceptance, feature_acceptance, "missing_feature_acceptance", "unknown_acceptance_id"))
-    issues.extend(_check_mapping(acceptance, task_acceptance, "missing_task_acceptance", "unknown_task_acceptance"))
+    issues.extend(
+        _check_mapping(
+            requirements, task_requirements, "missing_task_mapping", "unknown_task_requirement"
+        )
+    )
+    issues.extend(
+        _check_mapping(
+            acceptance, feature_acceptance, "missing_feature_acceptance", "unknown_acceptance_id"
+        )
+    )
+    issues.extend(
+        _check_mapping(
+            acceptance, task_acceptance, "missing_task_acceptance", "unknown_task_acceptance"
+        )
+    )
     return tuple(issues)
 
 

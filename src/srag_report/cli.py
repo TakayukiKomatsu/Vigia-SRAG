@@ -22,8 +22,9 @@ from .agent.models import NewsItem, ReportRequest
 from .audit.sink import AuditSink
 from .data.publish import SnapshotManifest, load_published_snapshot_manifest
 from .demo import build_demo_snapshot
-from .domain.source import SourceFamily
+from .domain.source import SourceFamily, SourceStatus
 from .governance import evaluate_golden_run
+from .metrics.enums import MetricId
 from .reporting.bundle import RunWorkspace
 from .tools.analytics import ChartsTool, MetricsTool
 from .tools.news import GoogleNewsRssTool, PinnedHTTPTransport
@@ -36,6 +37,15 @@ _SOURCE_LABELS = {
     SourceFamily.PNI: "PNI",
 }
 
+_METRIC_SOURCE_REQUIREMENTS: Mapping[MetricId, tuple[SourceFamily, ...]] = {
+    MetricId.CASE_GROWTH: (SourceFamily.SIVEP,),
+    MetricId.MORTALITY_PER_100K: (SourceFamily.SIVEP, SourceFamily.IBGE),
+    MetricId.HOSPITAL_CFR: (SourceFamily.SIVEP,),
+    MetricId.ICU_PRESSURE: (SourceFamily.SIVEP, SourceFamily.CNES),
+    MetricId.ICU_USE: (SourceFamily.SIVEP,),
+    MetricId.INFLUENZA_COVERAGE: (SourceFamily.PNI,),
+}
+
 
 def _source_watermarks(manifest: SnapshotManifest) -> dict[str, str]:
     watermarks: dict[str, str] = {}
@@ -43,6 +53,20 @@ def _source_watermarks(manifest: SnapshotManifest) -> dict[str, str]:
         label = _SOURCE_LABELS[source.family]
         watermarks[label] = max(watermarks.get(label, source.watermark), source.watermark)
     return watermarks
+
+
+def _metric_blockers(manifest: SnapshotManifest) -> dict[MetricId | str, str]:
+    verified_families = {
+        source.family for source in manifest.source_files if source.status is SourceStatus.VERIFIED
+    }
+    blockers: dict[MetricId | str, str] = {}
+    for metric_id, required_families in _METRIC_SOURCE_REQUIREMENTS.items():
+        unavailable_family = next(
+            (family for family in required_families if family not in verified_families), None
+        )
+        if unavailable_family is not None:
+            blockers[metric_id] = f"{unavailable_family.value}_source_unavailable"
+    return blockers
 
 
 class StaticDemoNewsTool:
@@ -71,13 +95,14 @@ def _execute(
     generated_at: dt.datetime,
     snapshot_watermark: dt.date,
     watermarks: Mapping[str, str],
+    blockers: Mapping[MetricId | str, str],
     news: NewsTool,
     commentary: CommentaryAdapter,
     execution_mode: Literal["deterministic", "live"],
 ) -> Path:
     workspace = RunWorkspace(output_root, request)
     dependencies = GraphDependencies(
-        metrics=MetricsTool(snapshot, watermark=snapshot_watermark),
+        metrics=MetricsTool(snapshot, watermark=snapshot_watermark, blockers=blockers),
         charts=ChartsTool(),
         news=news,
         commentary=commentary,
@@ -110,6 +135,7 @@ def _run_demo(args: argparse.Namespace) -> int:
         snapshot=snapshot,
         snapshot_watermark=as_of,
         watermarks={source: as_of.isoformat() for source in _SOURCES},
+        blockers={},
         output_root=Path(args.output_root),
         news=StaticDemoNewsTool(),
         commentary=FakeCommentaryAdapter([], error=RuntimeError("deterministic fallback")),
@@ -158,6 +184,7 @@ def _run_live(args: argparse.Namespace) -> int:
             output_root=Path(args.output_root),
             snapshot_watermark=manifest.as_of,
             watermarks=_source_watermarks(manifest),
+            blockers=_metric_blockers(manifest),
             generated_at=dt.datetime.now(dt.UTC),
             news=GoogleNewsRssTool(client),
             commentary=commentary,

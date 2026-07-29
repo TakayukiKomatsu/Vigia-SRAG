@@ -1,11 +1,14 @@
-# Fundação de dados SRAG
+---
+Document Status: DRAFT
+Release Status: EXTERNAL-BLOCKED
+Tier: extended
+Version: 2.2
+Owner: Indicium HealthCare PoC
+Created: 2026-07-28
+Date: 2026-07-29
+---
 
-> Status: DRAFT
-> Tier: extended
-> Version: 2.1
-> Owner: Indicium HealthCare PoC
-> Created: 2026-07-28
-> Last Updated: 2026-07-29
+# Fundação de dados SRAG
 
 ## Summary
 

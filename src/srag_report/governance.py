@@ -45,7 +45,8 @@ _PROHIBITED_TEXT = (
     "nu_notific",
 )
 _MODEL_SUMMARY = re.compile(
-    r"requested_model=(?P<requested>.*); served_model=(?P<served>.*); fallback=(?P<fallback>True|False)"
+    r"requested_model=(?P<requested>.*); served_model=(?P<served>.*); "
+    r"fallback=(?P<fallback>True|False)"
 )
 
 
@@ -68,7 +69,10 @@ def _audit_failures(events: tuple[AuditEvent, ...], manifest: RunManifest) -> tu
         failures.append("audit_invalid")
     if [event.sequence for event in events] != list(range(1, len(events) + 1)):
         failures.append("audit_sequence_invalid")
-    if any(later.occurred_at < earlier.occurred_at for earlier, later in zip(events, events[1:])):
+    if any(
+        later.occurred_at < earlier.occurred_at
+        for earlier, later in zip(events, events[1:], strict=False)
+    ):
         failures.append("audit_invalid")
 
     expected_events: list[tuple[str, str, EventStatus]] = []
@@ -83,10 +87,7 @@ def _audit_failures(events: tuple[AuditEvent, ...], manifest: RunManifest) -> tu
                 EventStatus.SUCCEEDED,
             )
         )
-    observed_events = tuple(
-        (event.event_type, event.component, event.status)
-        for event in events
-    )
+    observed_events = tuple((event.event_type, event.component, event.status) for event in events)
     if tuple(expected_events) != observed_events:
         failures.append("audit_node_order_invalid")
 

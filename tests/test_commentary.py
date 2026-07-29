@@ -10,6 +10,7 @@ import httpx
 import openai
 import pytest
 from openai import OpenAI
+from pydantic import ValidationError
 
 from srag_report.agent.commentary import (
     DEFAULT_OPENROUTER_MODEL,
@@ -20,7 +21,6 @@ from srag_report.agent.commentary import (
     generate_or_fallback,
 )
 from srag_report.agent.models import CommentaryFailureCode, CommentaryResult, EvidenceBundle
-from pydantic import ValidationError
 
 
 class FakeCompletions:
@@ -126,7 +126,9 @@ def test_openrouter_stream_returns_grounded_claims_and_served_model() -> None:
         assert item.title not in prompt
         assert item.final_url not in prompt
     assert set(commentary_evidence_ids(_evidence())) == {
-        evidence_id for evidence_id in _evidence().evidence_ids() if not evidence_id.startswith("news:")
+        evidence_id
+        for evidence_id in _evidence().evidence_ids()
+        if not evidence_id.startswith("news:")
     }
 
 
@@ -165,19 +167,26 @@ def test_openrouter_assigns_deterministic_ids_after_provider_validation() -> Non
     "payload",
     [
         {"claims": [{"text": "Claim válida", "evidence_ids": ["metric:case_growth"]}]},
-        {"claims": [
-            {"text": f"Claim {letter}", "evidence_ids": ["metric:case_growth"]}
-            for letter in ("A", "B", "C", "D")
-        ]},
+        {
+            "claims": [
+                {"text": f"Claim {letter}", "evidence_ids": ["metric:case_growth"]}
+                for letter in ("A", "B", "C", "D")
+            ]
+        },
         {"claims": [{"text": "A" * 241, "evidence_ids": ["metric:case_growth"]}] * 3},
         {"claims": [{"text": "Crescimento 50", "evidence_ids": ["metric:case_growth"]}] * 3},
         {"claims": [{"text": "Crescimento ５０", "evidence_ids": ["metric:case_growth"]}] * 3},
         {"claims": [{"text": "Crescimento ٥٠", "evidence_ids": ["metric:case_growth"]}] * 3},
-        {"claims": [{
-            "claim_id": "provider-id",
-            "text": "Claim válida",
-            "evidence_ids": ["metric:case_growth"],
-        }] * 3},
+        {
+            "claims": [
+                {
+                    "claim_id": "provider-id",
+                    "text": "Claim válida",
+                    "evidence_ids": ["metric:case_growth"],
+                }
+            ]
+            * 3
+        },
         {"claims": [{"text": "Claim válida", "evidence_ids": ["news:news-1"]}] * 3},
     ],
 )

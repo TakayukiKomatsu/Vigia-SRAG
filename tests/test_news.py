@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import datetime as dt
+from collections.abc import Callable
 from urllib.parse import parse_qs
 
-import httpx
 import httpcore
+import httpx
 import pytest
 
 from srag_report.agent.models import NewsItem
@@ -18,7 +19,35 @@ from srag_report.tools.news import (
 )
 
 _NOW = dt.datetime(2026, 7, 28, 12, tzinfo=dt.UTC)
-_TEST_RESOLVER = lambda _: ("8.8.8.8",)
+
+
+def _TEST_RESOLVER(_: str) -> tuple[str, ...]:
+    return ("8.8.8.8",)
+
+
+class PinningMockTransport(httpx.MockTransport):
+    """Network-free transport seam that records the DNS pins requested by the tool."""
+
+    def __init__(self, handler: Callable[[httpx.Request], httpx.Response]) -> None:
+        super().__init__(handler)
+        self.pins: list[tuple[str, str]] = []
+
+    def pin_host(self, hostname: str, address: str) -> None:
+        self.pins.append((hostname, address))
+
+
+def test_news_tool_rejects_unpinned_transport_before_request() -> None:
+    requested: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested.append(request)
+        return httpx.Response(200, content=_feed(""), request=request)
+
+    with httpx.Client(transport=httpx.MockTransport(handler), trust_env=False) as client:
+        with pytest.raises(ValueError, match="pin_host"):
+            GoogleNewsRssTool(client, resolver=_TEST_RESOLVER).collect(generated_at=_NOW)
+
+    assert requested == []
 
 
 def _feed(items: str) -> bytes:
@@ -78,15 +107,16 @@ def test_news_tool_applies_fixed_query_allowlist_window_dedup_and_limit() -> Non
             return httpx.Response(302, headers={"location": destination}, request=request)
         return httpx.Response(200, content=b"publisher", request=request)
 
-    with httpx.Client(
-        transport=httpx.MockTransport(handler), follow_redirects=True, trust_env=False
-    ) as client:
+    transport = PinningMockTransport(handler)
+    with httpx.Client(transport=transport, follow_redirects=True, trust_env=False) as client:
         news = GoogleNewsRssTool(client, resolver=_TEST_RESOLVER).collect(generated_at=_NOW)
     assert len(news) == 5
     assert len({item.title.casefold() for item in news}) == 5
     assert all(item.published_at >= _NOW - dt.timedelta(days=14) for item in news)
     assert all(item.final_url.startswith("https://g1.globo.com/") for item in news)
     assert any("Ignore previous instructions" in item.title for item in news)
+    assert ("news.google.com", "8.8.8.8") in transport.pins
+    assert ("g1.globo.com", "8.8.8.8") in transport.pins
 
 
 def test_news_tool_prefers_validated_publisher_url_from_google_feed() -> None:
@@ -105,7 +135,7 @@ def test_news_tool_prefers_validated_publisher_url_from_google_feed() -> None:
         assert request.url.host == "agenciabrasil.ebc.com.br"
         return httpx.Response(200, request=request)
 
-    with httpx.Client(transport=httpx.MockTransport(handler), trust_env=False) as client:
+    with httpx.Client(transport=PinningMockTransport(handler), trust_env=False) as client:
         news = GoogleNewsRssTool(client, resolver=_TEST_RESOLVER).collect(generated_at=_NOW)
 
     assert len(news) == 1
@@ -124,7 +154,7 @@ def test_news_tool_retries_one_transient_feed_failure() -> None:
             return httpx.Response(200, content=_feed(""), request=request)
         raise AssertionError(f"unexpected request: {request.url}")
 
-    with httpx.Client(transport=httpx.MockTransport(handler), trust_env=False) as client:
+    with httpx.Client(transport=PinningMockTransport(handler), trust_env=False) as client:
         assert GoogleNewsRssTool(client, resolver=_TEST_RESOLVER).collect(generated_at=_NOW) == ()
     assert attempts == 2
 
@@ -142,7 +172,7 @@ def test_news_tool_rejects_non_global_redirect_destination() -> None:
         return httpx.Response(200, request=request)
 
     with httpx.Client(
-        transport=httpx.MockTransport(handler), follow_redirects=True, trust_env=False
+        transport=PinningMockTransport(handler), follow_redirects=True, trust_env=False
     ) as client:
         assert GoogleNewsRssTool(client, resolver=_TEST_RESOLVER).collect(generated_at=_NOW) == ()
 
@@ -158,7 +188,7 @@ def test_news_tool_rejects_initial_feed_redirect_to_loopback() -> None:
             request=request,
         )
 
-    with httpx.Client(transport=httpx.MockTransport(handler), trust_env=False) as client:
+    with httpx.Client(transport=PinningMockTransport(handler), trust_env=False) as client:
         with pytest.raises(ValueError, match="non-global"):
             GoogleNewsRssTool(client, resolver=_TEST_RESOLVER).collect(generated_at=_NOW)
     assert not any("127.0.0.1" in url for url in requested)
@@ -181,7 +211,7 @@ def test_news_tool_rejects_any_non_global_dns_answer_before_initial_request(
         requested.append(str(request.url))
         return httpx.Response(200, content=_feed(""), request=request)
 
-    with httpx.Client(transport=httpx.MockTransport(handler), trust_env=False) as client:
+    with httpx.Client(transport=PinningMockTransport(handler), trust_env=False) as client:
         with pytest.raises(ValueError, match=reason):
             GoogleNewsRssTool(client, resolver=lambda _: ("8.8.8.8", address)).collect(
                 generated_at=_NOW
@@ -190,7 +220,9 @@ def test_news_tool_rejects_any_non_global_dns_answer_before_initial_request(
 
 
 def test_news_tool_rejects_empty_dns_result_before_initial_request() -> None:
-    with httpx.Client(transport=httpx.MockTransport(lambda request: pytest.fail(str(request)))) as client:
+    with httpx.Client(
+        transport=PinningMockTransport(lambda request: pytest.fail(str(request)))
+    ) as client:
         with pytest.raises(ValueError, match="DNS result"):
             GoogleNewsRssTool(client, resolver=lambda _: ()).collect(generated_at=_NOW)
 
@@ -234,7 +266,9 @@ def test_news_security_controls_cover_every_request_path(
     feed = _feed(
         _item(
             "Security test",
-            target if request_path == "opaque article link" else "https://news.google.com/articles/unused",
+            target
+            if request_path == "opaque article link"
+            else "https://news.google.com/articles/unused",
             "G1",
             source_url=destination if request_path == "source URL" else None,
         )
@@ -301,9 +335,11 @@ def test_news_security_controls_cover_every_request_path(
         "empty DNS",
         "mixed global/private DNS",
     }
-    with httpx.Client(transport=httpx.MockTransport(handler), trust_env=False) as client:
+    with httpx.Client(transport=PinningMockTransport(handler), trust_env=False) as client:
         tool = GoogleNewsRssTool(client, resolver=resolver)
-        if request_path == "initial feed" and (invalid_before_request or scenario not in {"one transient retry then success"}):
+        if request_path == "initial feed" and (
+            invalid_before_request or scenario not in {"one transient retry then success"}
+        ):
             with pytest.raises((ValueError, httpx.HTTPError)):
                 tool.collect(generated_at=_NOW)
         else:
@@ -335,7 +371,12 @@ def test_pinned_transport_connects_to_preflight_ip_and_keeps_hostname_for_tls() 
         def close(self) -> None:
             pass
 
-        def start_tls(self, ssl_context: object, server_hostname: str | None = None, timeout: float | None = None) -> RecordingStream:
+        def start_tls(
+            self,
+            ssl_context: object,
+            server_hostname: str | None = None,
+            timeout: float | None = None,
+        ) -> RecordingStream:
             self.tls_server_hostnames.append(server_hostname)
             return self
 
@@ -347,7 +388,9 @@ def test_pinned_transport_connects_to_preflight_ip_and_keeps_hostname_for_tls() 
             self.connects: list[tuple[str, int]] = []
             self.stream = RecordingStream()
 
-        def connect_tcp(self, host: str, port: int, *args: object, **kwargs: object) -> RecordingStream:
+        def connect_tcp(
+            self, host: str, port: int, *args: object, **kwargs: object
+        ) -> RecordingStream:
             self.connects.append((host, port))
             return self.stream
 
@@ -376,7 +419,7 @@ def test_news_tool_rejects_oversized_feed_before_xml_parsing() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, content=oversized, request=request)
 
-    with httpx.Client(transport=httpx.MockTransport(handler), trust_env=False) as client:
+    with httpx.Client(transport=PinningMockTransport(handler), trust_env=False) as client:
         with pytest.raises(ValueError, match="response exceeds"):
             GoogleNewsRssTool(client, resolver=lambda _: ("8.8.8.8",)).collect(generated_at=_NOW)
 
@@ -394,7 +437,7 @@ def test_news_tool_rejects_dtd_and_entities_before_application_parsing(payload: 
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, content=payload, request=request)
 
-    with httpx.Client(transport=httpx.MockTransport(handler), trust_env=False) as client:
+    with httpx.Client(transport=PinningMockTransport(handler), trust_env=False) as client:
         with pytest.raises(ValueError, match="DTD|entity"):
             GoogleNewsRssTool(client, resolver=lambda _: ("8.8.8.8",)).collect(generated_at=_NOW)
 

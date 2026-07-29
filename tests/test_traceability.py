@@ -16,11 +16,16 @@ def _spec(root: Path, *, fr: str, ac: str, task: str) -> Path:
 
 
 def test_checker_understands_domain_qualified_ids(tmp_path: Path) -> None:
-    assert check_spec_dir(_spec(tmp_path / "sdd", fr="FR-AR-6", ac="AC-AR-6", task="FR-AR-6 AC-AR-6")) == ()
+    assert (
+        check_spec_dir(_spec(tmp_path / "sdd", fr="FR-AR-6", ac="AC-AR-6", task="FR-AR-6 AC-AR-6"))
+        == ()
+    )
 
 
 def test_checker_rejects_vacuous_success(tmp_path: Path) -> None:
-    assert "no_requirement_ids_discovered" in check_spec_dir(_spec(tmp_path / "sdd", fr="", ac="", task=""))
+    assert "no_requirement_ids_discovered" in check_spec_dir(
+        _spec(tmp_path / "sdd", fr="", ac="", task="")
+    )
 
 
 def test_checker_reports_missing_and_unknown_mappings(tmp_path: Path) -> None:

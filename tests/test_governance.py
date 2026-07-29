@@ -6,13 +6,12 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
-
 from test_graph import _AS_OF, _GENERATED, _dependencies
 
 from srag_report.agent.commentary import DEFAULT_OPENROUTER_MODEL
 from srag_report.agent.evidence import deterministic_fallback
 from srag_report.agent.graph import run_report
-from srag_report.agent.models import CommentaryResult, EvidenceBundle, EventStatus, ReportRequest
+from srag_report.agent.models import CommentaryResult, EventStatus, EvidenceBundle, ReportRequest
 from srag_report.governance import evaluate_golden_run
 from srag_report.metrics.enums import MetricId, MetricState, UnavailableReason
 from srag_report.reporting.bundle import RunManifest
@@ -62,6 +61,7 @@ def _promote_fixture_to_live_candidate(run_path: Path) -> None:
         }
     )
     manifest_path.write_text(manifest.model_dump_json(indent=2) + "\n")
+
     def promote_audit(events: list[dict[str, object]]) -> None:
         model = next(event for event in events if event["event_type"] == "model")
         model.update(
@@ -205,7 +205,9 @@ def test_gate_does_not_require_scope_for_non_value_bearing_influenza(
             else metric
             for metric in unscoped_metrics
         )
-        evidence_path.write_text(evidence.model_copy(update={"metrics": metrics}).model_dump_json() + "\n")
+        evidence_path.write_text(
+            evidence.model_copy(update={"metrics": metrics}).model_dump_json() + "\n"
+        )
         manifest = RunManifest.model_validate_json((run_path / "manifest.json").read_text())
         _rewrite_manifest(
             run_path,
@@ -351,7 +353,8 @@ def test_gate_rejects_typed_audit_mutations_after_hash_is_updated(tmp_path: Path
         news = next(
             event
             for event in events
-            if event["component"] == "search_news" and event["status"] == EventStatus.SUCCEEDED.value
+            if event["component"] == "search_news"
+            and event["status"] == EventStatus.SUCCEEDED.value
         )
         news["status"] = EventStatus.FAILED.value
 

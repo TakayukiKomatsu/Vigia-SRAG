@@ -12,19 +12,30 @@ import datetime as dt
 import hashlib
 import json
 import os
-from pathlib import Path
 import tempfile
-from typing import Any, Iterable
+from collections.abc import Iterable
+from pathlib import Path
+from typing import Any
+
+from acquire_official_sources import IBGE_SOURCE, SIVEP_SOURCE, OfficialSource
 
 from srag_report.data.normalization import FieldReasonCounts, NormalizationCounts
-from srag_report.data.publish import QualityManifest, normalization_manifest, publish_snapshot
+from srag_report.data.publish import (
+    NormalizationManifest,
+    QualityManifest,
+    normalization_manifest,
+    publish_snapshot,
+)
 from srag_report.data.sivep import normalize_sivep_csv_to_jsonl
 from srag_report.data.sources import normalize_ibge_ods
 from srag_report.data.store import materialize_snapshot
-from srag_report.domain.models import IbgePopulationRow, SivepCanonicalRow, SourceContractDocument, SourceFileEntry
+from srag_report.domain.models import (
+    IbgePopulationRow,
+    SivepCanonicalRow,
+    SourceContractDocument,
+    SourceFileEntry,
+)
 from srag_report.domain.source import CNES_ICU_ALLOWLIST, QualityState, SourceFamily, SourceStatus
-
-from acquire_official_sources import IBGE_SOURCE, SIVEP_SOURCE, OfficialSource
 
 
 class PreparationError(RuntimeError):
@@ -38,6 +49,7 @@ def _file_sha256(path: Path) -> str:
 
 def _csv_rows(path: Path, encoding: str) -> int:
     import csv
+
     with path.open("r", encoding=encoding, newline="") as handle:
         return sum(1 for _ in csv.reader(handle, delimiter=";")) - 1
 
@@ -65,15 +77,23 @@ def _mapping_sha256(mapping: dict[str, str]) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-def _acquisition_record(acquisition: dict[str, Any], source: OfficialSource) -> dict[str, Any] | None:
+def _acquisition_record(
+    acquisition: dict[str, Any], source: OfficialSource
+) -> dict[str, Any] | None:
     record = next(
-        (item for item in acquisition["sources"] if isinstance(item, dict) and item.get("key") == source.key),
+        (
+            item
+            for item in acquisition["sources"]
+            if isinstance(item, dict) and item.get("key") == source.key
+        ),
         None,
     )
     return record if isinstance(record, dict) else None
 
 
-def _attested(acquisition: dict[str, Any], source: OfficialSource, supplied_path: Path) -> dict[str, Any]:
+def _attested(
+    acquisition: dict[str, Any], source: OfficialSource, supplied_path: Path
+) -> dict[str, Any]:
     record = _acquisition_record(acquisition, source)
     if record is None:
         raise PreparationError(f"{source.key}_not_verified")
@@ -118,13 +138,20 @@ def _attested(acquisition: dict[str, Any], source: OfficialSource, supplied_path
     return record
 
 
-def _source_entry(source: OfficialSource, record: dict[str, Any], path: Path, *, year: int) -> SourceFileEntry:
+def _source_entry(
+    source: OfficialSource, record: dict[str, Any], path: Path, *, year: int
+) -> SourceFileEntry:
     return SourceFileEntry(
-        family=SourceFamily(source.family), identifier=source.identifier, sha256=source.expected_sha256,
-        local_path=str(path), size_bytes=source.expected_size_bytes,
+        family=SourceFamily(source.family),
+        identifier=source.identifier,
+        sha256=source.expected_sha256,
+        local_path=str(path),
+        size_bytes=source.expected_size_bytes,
         data_rows=int(record["data_rows"]),
         retrieval_at=dt.datetime.fromisoformat(str(record["retrieved_at"]).replace("Z", "+00:00")),
-        watermark=source.watermark, status=SourceStatus.VERIFIED, year=year,
+        watermark=source.watermark,
+        status=SourceStatus.VERIFIED,
+        year=year,
     )
 
 
@@ -169,7 +196,9 @@ def _write_official_provenance(
         "canonical_snapshot_sha256": artifact_sha256,
         "sources": sources,
     }
-    payload = (json.dumps(attestation, ensure_ascii=True, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    payload = (json.dumps(attestation, ensure_ascii=True, indent=2, sort_keys=True) + "\n").encode(
+        "utf-8"
+    )
     digest = hashlib.sha256(payload).hexdigest()
     provenance_path = published / "official-provenance.json"
     _atomic_write_bytes(provenance_path, payload)
@@ -198,15 +227,28 @@ def _jsonl_rows(path: Path) -> Iterable[SivepCanonicalRow]:
             yield SivepCanonicalRow.model_validate_json(line)
 
 
-def _absent_manifest(family: SourceFamily, reason: str):
+def _absent_manifest(family: SourceFamily, reason: str) -> NormalizationManifest:
     return normalization_manifest(
-        family, counts=NormalizationCounts(total_input=0, accepted=0),
-        reasons=FieldReasonCounts(by_reason={reason: 1}), completeness=0.0,
-        quality_state=QualityState.UNAVAILABLE, blocked=False, blocker_reason=None,
+        family,
+        counts=NormalizationCounts(total_input=0, accepted=0),
+        reasons=FieldReasonCounts(by_reason={reason: 1}),
+        completeness=0.0,
+        quality_state=QualityState.UNAVAILABLE,
+        blocked=False,
+        blocker_reason=None,
     )
 
 
-def prepare_snapshot(*, acquisition_path: Path, sivep_csv: Path, ibge_ods: Path | None, output_root: Path, snapshot_id: str, as_of: dt.date, generated_at: dt.datetime | None = None) -> Path:
+def prepare_snapshot(
+    *,
+    acquisition_path: Path,
+    sivep_csv: Path,
+    ibge_ods: Path | None,
+    output_root: Path,
+    snapshot_id: str,
+    as_of: dt.date,
+    generated_at: dt.datetime | None = None,
+) -> Path:
     """Verify local attestations and publish an explicitly ineligible warning snapshot."""
     acquisition = _load_acquisition(acquisition_path)
     sivep_record = _attested(acquisition, SIVEP_SOURCE, sivep_csv)
@@ -215,31 +257,104 @@ def prepare_snapshot(*, acquisition_path: Path, sivep_csv: Path, ibge_ods: Path 
     if generated.utcoffset() != dt.timedelta(0):
         raise PreparationError("generated_at_not_utc")
     normalized_jsonl = output_root / ".prepared" / f"{snapshot_id}.sivep.jsonl"
-    sivep_result = normalize_sivep_csv_to_jsonl(sivep_csv, normalized_jsonl, source_sha256=SIVEP_SOURCE.expected_sha256, year=2026, watermark=as_of)
+    sivep_result = normalize_sivep_csv_to_jsonl(
+        sivep_csv,
+        normalized_jsonl,
+        source_sha256=SIVEP_SOURCE.expected_sha256,
+        year=2026,
+        watermark=as_of,
+    )
     if sivep_result.blocked:
         raise PreparationError("sivep_normalization_blocked")
     sources = [_source_entry(SIVEP_SOURCE, sivep_record, sivep_csv, year=2026)]
     ibge_rows: tuple[IbgePopulationRow, ...] = ()
-    normalization = [normalization_manifest(SourceFamily.SIVEP, counts=sivep_result.counts, reasons=sivep_result.reasons, completeness=sivep_result.completeness, quality_state=sivep_result.quality_state, blocked=False, blocker_reason=None)]
+    normalization = [
+        normalization_manifest(
+            SourceFamily.SIVEP,
+            counts=sivep_result.counts,
+            reasons=sivep_result.reasons,
+            completeness=sivep_result.completeness,
+            quality_state=sivep_result.quality_state,
+            blocked=False,
+            blocker_reason=None,
+        )
+    ]
     ibge_available = False
-    if ibge_ods is not None and (_acquisition_record(acquisition, IBGE_SOURCE) or {}).get("status") == "verified":
+    if (
+        ibge_ods is not None
+        and (_acquisition_record(acquisition, IBGE_SOURCE) or {}).get("status") == "verified"
+    ):
         verified_ibge = _attested(acquisition, IBGE_SOURCE, ibge_ods)
-        ibge_row, ibge_result = normalize_ibge_ods(ibge_ods, source_sha256=IBGE_SOURCE.expected_sha256)
+        ibge_row, ibge_result = normalize_ibge_ods(
+            ibge_ods,
+            source_sha256=IBGE_SOURCE.expected_sha256,
+            header_row_index=1,
+        )
         if ibge_result.blocked or ibge_row is None:
             raise PreparationError("ibge_normalization_blocked")
         ibge_rows = (ibge_row,)
         sources.append(_source_entry(IBGE_SOURCE, verified_ibge, ibge_ods, year=2025))
-        normalization.append(normalization_manifest(SourceFamily.IBGE, counts=ibge_result.counts, reasons=ibge_result.reasons, completeness=ibge_result.completeness, quality_state=ibge_result.quality_state, blocked=False, blocker_reason=None))
+        normalization.append(
+            normalization_manifest(
+                SourceFamily.IBGE,
+                counts=ibge_result.counts,
+                reasons=ibge_result.reasons,
+                completeness=ibge_result.completeness,
+                quality_state=ibge_result.quality_state,
+                blocked=False,
+                blocker_reason=None,
+            )
+        )
         ibge_available = True
         attested_sources.append(_sanitized_source_attestation(IBGE_SOURCE, verified_ibge))
     else:
         normalization.append(_absent_manifest(SourceFamily.IBGE, "ibge_source_unavailable"))
-    normalization.extend((_absent_manifest(SourceFamily.CNES, "cnes_source_unavailable"), _absent_manifest(SourceFamily.PNI, "pni_source_unavailable")))
-    contract = SourceContractDocument(schema_version="1.0", contract_version="official-2026-07-29", contract_date=dt.date(2026, 7, 29), cnes_competencia=202606, cnes_icu_allowlist=tuple(sorted(CNES_ICU_ALLOWLIST)), sources=tuple(sources))
-    artifact = materialize_snapshot(output_root / ".prepared" / f"{snapshot_id}.duckdb", sivep_rows=_jsonl_rows(normalized_jsonl), cnes_rows=(), ibge_rows=ibge_rows, source_contracts=(contract,))
-    metric_states = {"case_growth": "available", "mortality_per_100k": "available" if ibge_available else "unavailable", "icu_pressure": "unavailable", "icu_use": "unavailable", "influenza_coverage": "unavailable"}
-    quality = QualityManifest(snapshot_id=snapshot_id, state=QualityState.WARNING, metric_completeness={name: 1.0 if state == "available" else 0.0 for name, state in metric_states.items()})
-    published = publish_snapshot(output_root, snapshot_id=snapshot_id, artifact=artifact, contract=contract, normalization=normalization, quality=quality, generated_at=generated, as_of=as_of)
+    normalization.extend(
+        (
+            _absent_manifest(SourceFamily.CNES, "cnes_source_unavailable"),
+            _absent_manifest(SourceFamily.PNI, "pni_source_unavailable"),
+        )
+    )
+    contract = SourceContractDocument(
+        schema_version="1.0",
+        contract_version="official-2026-07-29",
+        contract_date=dt.date(2026, 7, 29),
+        cnes_competencia=202606,
+        cnes_icu_allowlist=tuple(sorted(CNES_ICU_ALLOWLIST)),
+        sources=tuple(sources),
+    )
+    artifact = materialize_snapshot(
+        output_root / ".prepared" / f"{snapshot_id}.duckdb",
+        sivep_rows=_jsonl_rows(normalized_jsonl),
+        cnes_rows=(),
+        ibge_rows=ibge_rows,
+        source_contracts=(contract,),
+    )
+    metric_states = {
+        "case_growth": "available",
+        "mortality_per_100k": "available" if ibge_available else "unavailable",
+        "hospital_cfr": "available",
+        "icu_pressure": "unavailable",
+        "icu_use": "available",
+        "influenza_coverage": "unavailable",
+    }
+    quality = QualityManifest(
+        snapshot_id=snapshot_id,
+        state=QualityState.WARNING,
+        metric_completeness={
+            name: 1.0 if state == "available" else 0.0 for name, state in metric_states.items()
+        },
+    )
+    published = publish_snapshot(
+        output_root,
+        snapshot_id=snapshot_id,
+        artifact=artifact,
+        contract=contract,
+        normalization=normalization,
+        quality=quality,
+        generated_at=generated,
+        as_of=as_of,
+    )
     provenance_sha256, provenance_result = _write_official_provenance(
         published,
         snapshot_id=snapshot_id,
@@ -247,8 +362,33 @@ def prepare_snapshot(*, acquisition_path: Path, sivep_csv: Path, ibge_ods: Path 
         sources=attested_sources,
         artifact_sha256=artifact.content_sha256,
     )
-    evidence = {"schema_version": "1.0", "source_status": {"sivep": "verified", "ibge": "verified" if ibge_available else "unavailable", "cnes": "unavailable", "pni": "unavailable"}, "normalization": {item.family.value: item.counts.model_dump(mode="json") for item in normalization}, "effective_watermarks": {"sivep": SIVEP_SOURCE.watermark, "ibge": IBGE_SOURCE.watermark if ibge_available else None}, "metric_states": metric_states, "golden_eligible": False, "golden_ineligibility_reasons": ["cnes_source_unavailable", "pni_source_unavailable"] + ([] if ibge_available else ["ibge_source_unavailable"]), "canonical_snapshot_sha256": artifact.content_sha256, "snapshot_file_sha256": artifact.file_sha256, "official_provenance_sha256": provenance_sha256, "official_provenance_result": provenance_result}
-    (published / "official-preparation.json").write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    evidence = {
+        "schema_version": "1.0",
+        "source_status": {
+            "sivep": "verified",
+            "ibge": "verified" if ibge_available else "unavailable",
+            "cnes": "unavailable",
+            "pni": "unavailable",
+        },
+        "normalization": {
+            item.family.value: item.counts.model_dump(mode="json") for item in normalization
+        },
+        "effective_watermarks": {
+            "sivep": SIVEP_SOURCE.watermark,
+            "ibge": IBGE_SOURCE.watermark if ibge_available else None,
+        },
+        "metric_states": metric_states,
+        "golden_eligible": False,
+        "golden_ineligibility_reasons": ["cnes_source_unavailable", "pni_source_unavailable"]
+        + ([] if ibge_available else ["ibge_source_unavailable"]),
+        "canonical_snapshot_sha256": artifact.content_sha256,
+        "snapshot_file_sha256": artifact.file_sha256,
+        "official_provenance_sha256": provenance_sha256,
+        "official_provenance_result": provenance_result,
+    }
+    (published / "official-preparation.json").write_text(
+        json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     return published
 
 
@@ -261,7 +401,14 @@ def main() -> int:
     parser.add_argument("--snapshot-id", default="official-20260727")
     parser.add_argument("--as-of", type=dt.date.fromisoformat, default=dt.date(2026, 7, 26))
     args = parser.parse_args()
-    prepare_snapshot(acquisition_path=args.acquisition, sivep_csv=args.sivep_csv, ibge_ods=args.ibge_ods, output_root=args.output_root, snapshot_id=args.snapshot_id, as_of=args.as_of)
+    prepare_snapshot(
+        acquisition_path=args.acquisition,
+        sivep_csv=args.sivep_csv,
+        ibge_ods=args.ibge_ods,
+        output_root=args.output_root,
+        snapshot_id=args.snapshot_id,
+        as_of=args.as_of,
+    )
     return 0
 
 

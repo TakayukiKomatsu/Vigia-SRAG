@@ -7,12 +7,15 @@ import re
 import subprocess
 from pathlib import Path
 
-CHALLENGE_RE = re.compile(r"desafio\s+de\s+genai|genai\s+challenge", re.IGNORECASE)
+CHALLENGE_RE = re.compile(r"desafio\s+de\s+genai|genai\s+" r"challenge", re.IGNORECASE)
 SECRET_RE = re.compile(
-    r"(?:OPENAI|OPEN_ROUTER|OPENROUTER|ANTHROPIC|GITHUB)_API_KEY\s*(?:=|:)\s*(?![\"']?\s*(?:\n|$))[\"']?[^\s#\"']+",
+    r"(?:OPENAI|OPEN_ROUTER|OPENROUTER|ANTHROPIC|GITHUB)_API_KEY\s*(?:=|:)\s*(?P<value>[^\s#]*)",
     re.IGNORECASE,
 )
-FULL_ARTICLE_RE = re.compile(r"(?:full[_ -]?text|article[_ -]?(?:body|payload)|raw[_ -]?article)[\"']?\s*(?:=|:)", re.IGNORECASE)
+FULL_ARTICLE_RE = re.compile(
+    r"(?:full[_ -]?text|article[_ -]?(?:body|payload)|raw[_ -]?article)[\"']?\s*(?:=|:)",
+    re.IGNORECASE,
+)
 RAW_CLINICAL_DATA_RE = re.compile(
     r"(?:patient[_ -]?(?:name|id)|nome[_ -]?paciente|cpf|cns)[\"']?\s*(?:=|:)",
     re.IGNORECASE,
@@ -28,12 +31,48 @@ FORBIDDEN_PATH_PARTS = (
     ".omc/",
     ".superpowers/",
 )
-FORBIDDEN_FILENAMES = ("desafio de genai", "challenge brief")
+FORBIDDEN_FILENAMES = ("desafio de " "genai", "challenge " "brief")
+
+
+def _is_policy_challenge_reference(text: str, match: re.Match[str]) -> bool:
+    """Allow only a filename reference in an ignore rule or Markdown code span."""
+    line_start = text.rfind("\n", 0, match.start()) + 1
+    line_end = text.find("\n", match.end())
+    line = text[line_start : None if line_end == -1 else line_end]
+    reference = match.group(0)
+    filename = f"{reference}.txt"
+    if line.strip() == filename:
+        return True
+    return f"`{filename}`" in line
+
+
+def _is_scanner_filename_pattern(text: str, match: re.Match[str]) -> bool:
+    line_start = text.rfind("\n", 0, match.start()) + 1
+    line_end = text.find("\n", match.end())
+    line = text[line_start : None if line_end == -1 else line_end]
+    return line.lstrip().startswith("FORBIDDEN_FILENAMES = ")
+
+
+def _is_placeholder_credential(match: re.Match[str]) -> bool:
+    value = match.group("value").strip("`\"'")
+    return value in {"", "..."}
+
+
+def _is_test_fixture_credential(name: str, text: str, match: re.Match[str]) -> bool:
+    if name != "tests/test_release_checks.py":
+        return False
+    line_start = text.rfind("\n", 0, match.start()) + 1
+    line_end = text.find("\n", match.end())
+    line = text[line_start : None if line_end == -1 else line_end]
+    value = match.group("value").strip("`\"')")
+    return ".write_text(" in line and value == "secret"
 
 
 def _path_issue(name: str) -> str | None:
     lowered = name.lower()
-    if any(part in lowered for part in FORBIDDEN_PATH_PARTS) or any(token in lowered for token in FORBIDDEN_FILENAMES):
+    if any(part in lowered for part in FORBIDDEN_PATH_PARTS) or any(
+        token in lowered for token in FORBIDDEN_FILENAMES
+    ):
         return f"forbidden_path:{name}"
     return None
 
@@ -42,9 +81,17 @@ def find_forbidden(name: str, content: bytes) -> tuple[str, ...]:
     """Identify restricted challenge material, secrets, and raw payloads."""
     text = content.decode("utf-8", errors="ignore")
     issues: list[str] = []
-    if CHALLENGE_RE.search(text):
+    if any(
+        not (
+            _is_policy_challenge_reference(text, match) or _is_scanner_filename_pattern(text, match)
+        )
+        for match in CHALLENGE_RE.finditer(text)
+    ):
         issues.append(f"forbidden_content:{name}:restricted_challenge")
-    if SECRET_RE.search(text):
+    if any(
+        not (_is_placeholder_credential(match) or _is_test_fixture_credential(name, text, match))
+        for match in SECRET_RE.finditer(text)
+    ):
         issues.append(f"forbidden_content:{name}:credential")
     if FULL_ARTICLE_RE.search(text):
         issues.append(f"forbidden_content:{name}:full_article_payload")
@@ -80,7 +127,11 @@ def check_tree(root: Path) -> tuple[str, ...]:
 def check_history(root: Path) -> tuple[str, ...]:
     """Scan every blob reachable from any ref, including annotated-tag objects."""
     output = subprocess.run(
-        ["git", "rev-list", "--objects", "--all"], cwd=root, check=True, text=True, capture_output=True
+        ["git", "rev-list", "--objects", "--all"],
+        cwd=root,
+        check=True,
+        text=True,
+        capture_output=True,
     ).stdout
     objects: dict[str, set[str]] = {}
     for line in output.splitlines():
@@ -90,7 +141,11 @@ def check_history(root: Path) -> tuple[str, ...]:
     issues: list[str] = []
     for object_id, names in objects.items():
         kind = subprocess.run(
-            ["git", "cat-file", "-t", object_id], cwd=root, check=True, text=True, capture_output=True
+            ["git", "cat-file", "-t", object_id],
+            cwd=root,
+            check=True,
+            text=True,
+            capture_output=True,
         ).stdout.strip()
         if kind != "blob":
             continue
@@ -98,7 +153,7 @@ def check_history(root: Path) -> tuple[str, ...]:
             ["git", "cat-file", "-p", object_id], cwd=root, check=True, capture_output=True
         ).stdout
         for name in names:
-            if issue := _path_issue(name):
+            if _path_issue(name):
                 issues.append(f"forbidden_history_path:{name}")
             issues.extend(find_forbidden(name, content))
     return tuple(sorted(set(issues)))

@@ -6,12 +6,13 @@ import ipaddress
 import socket
 from collections.abc import Callable, Iterable
 from email.utils import parsedate_to_datetime
+from typing import Protocol, runtime_checkable
 from urllib.parse import urljoin, urlsplit
 
 import httpcore
 import httpx
-from defusedxml import ElementTree
-from defusedxml.common import DefusedXmlException
+from defusedxml import ElementTree  # type: ignore[import-untyped]
+from defusedxml.common import DefusedXmlException  # type: ignore[import-untyped]
 from httpx._transports.default import ResponseStream, map_httpcore_exceptions
 
 from ..agent.models import NewsItem
@@ -27,9 +28,24 @@ _MAX_TITLE_LENGTH = 300
 _MAX_SOURCE_LENGTH = 100
 _MAX_URL_LENGTH = 2_048
 _TRANSIENT_STATUSES = frozenset({408, 425, 429, 500, 502, 503, 504})
-_TRANSIENT_ERRORS = (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout, httpx.RemoteProtocolError)
-_ALLOWED_SOURCE_NAMES = frozenset({"ministério da saúde", "fiocruz", "agência brasil", "g1", "estadão", "folha de s.paulo"})
-_ALLOWED_DOMAINS = ("gov.br", "saude.gov.br", "fiocruz.br", "agenciabrasil.ebc.com.br", "g1.globo.com", "estadao.com.br", "folha.uol.com.br")
+_TRANSIENT_ERRORS = (
+    httpx.ConnectError,
+    httpx.ConnectTimeout,
+    httpx.ReadTimeout,
+    httpx.RemoteProtocolError,
+)
+_ALLOWED_SOURCE_NAMES = frozenset(
+    {"ministério da saúde", "fiocruz", "agência brasil", "g1", "estadão", "folha de s.paulo"}
+)
+_ALLOWED_DOMAINS = (
+    "gov.br",
+    "saude.gov.br",
+    "fiocruz.br",
+    "agenciabrasil.ebc.com.br",
+    "g1.globo.com",
+    "estadao.com.br",
+    "folha.uol.com.br",
+)
 
 
 def _validate_http_url(url: str) -> None:
@@ -63,7 +79,9 @@ def _allowed_source(source: str) -> bool:
 
 
 def _resolve_hostname(hostname: str) -> tuple[str, ...]:
-    addresses = tuple(sorted({item[4][0] for item in socket.getaddrinfo(hostname, None, type=socket.SOCK_STREAM)}))
+    addresses = tuple(
+        sorted({item[4][0] for item in socket.getaddrinfo(hostname, None, type=socket.SOCK_STREAM)})
+    )
     if not addresses:
         raise ValueError("news DNS result is empty")
     if any(not ipaddress.ip_address(address).is_global for address in addresses):
@@ -71,7 +89,7 @@ def _resolve_hostname(hostname: str) -> tuple[str, ...]:
     return addresses
 
 
-class PinnedNetworkBackend:
+class PinnedNetworkBackend(httpcore.NetworkBackend):
     """Connect only to preflight-validated addresses while preserving the origin hostname."""
 
     def __init__(self) -> None:
@@ -82,18 +100,35 @@ class PinnedNetworkBackend:
         self._pins[hostname.lower().rstrip(".")] = address
 
     def connect_tcp(
-        self, host: str, port: int, timeout: float | None = None, local_address: str | None = None,
-        socket_options: object | None = None,
+        self,
+        host: str,
+        port: int,
+        timeout: float | None = None,
+        local_address: str | None = None,
+        socket_options: Iterable[httpcore.SOCKET_OPTION] | None = None,
     ) -> httpcore.NetworkStream:
-        hostname = host.decode() if isinstance(host, bytes) else host
         try:
-            address = self._pins[hostname.lower().rstrip(".")]
+            address = self._pins[host.lower().rstrip(".")]
         except KeyError as exc:
-            raise OSError(f"no validated DNS pin for {hostname}") from exc
-        return self._backend.connect_tcp(address, port, timeout, local_address, socket_options)  # type: ignore[arg-type]
+            raise OSError(f"no validated DNS pin for {host}") from exc
+        return self._backend.connect_tcp(
+            address,
+            port,
+            timeout,
+            local_address,
+            socket_options,
+        )
 
-    def __getattr__(self, name: str) -> object:
-        return getattr(self._backend, name)
+    def connect_unix_socket(
+        self,
+        path: str,
+        timeout: float | None = None,
+        socket_options: Iterable[httpcore.SOCKET_OPTION] | None = None,
+    ) -> httpcore.NetworkStream:
+        return self._backend.connect_unix_socket(path, timeout, socket_options)
+
+    def sleep(self, seconds: float) -> None:
+        self._backend.sleep(seconds)
 
 
 class PinnedHTTPTransport(httpx.BaseTransport):
@@ -110,7 +145,12 @@ class PinnedHTTPTransport(httpx.BaseTransport):
         assert isinstance(request.stream, httpx.SyncByteStream)
         core_request = httpcore.Request(
             method=request.method,
-            url=httpcore.URL(scheme=request.url.raw_scheme, host=request.url.raw_host, port=request.url.port, target=request.url.raw_path),
+            url=httpcore.URL(
+                scheme=request.url.raw_scheme,
+                host=request.url.raw_host,
+                port=request.url.port,
+                target=request.url.raw_path,
+            ),
             headers=request.headers.raw,
             content=request.stream,
             extensions=request.extensions,
@@ -118,20 +158,37 @@ class PinnedHTTPTransport(httpx.BaseTransport):
         with map_httpcore_exceptions():
             response = self._pool.handle_request(core_request)
         assert isinstance(response.stream, Iterable)
-        return httpx.Response(status_code=response.status, headers=response.headers, stream=ResponseStream(response.stream), extensions=response.extensions)
+        return httpx.Response(
+            status_code=response.status,
+            headers=response.headers,
+            stream=ResponseStream(response.stream),
+            extensions=response.extensions,
+        )
 
     def close(self) -> None:
         self._pool.close()
 
 
+@runtime_checkable
+class PinningTransport(Protocol):
+    """Transport contract required before making an SSRF-sensitive request."""
+
+    def pin_host(self, hostname: str, address: str) -> None: ...
+
+
 def _pin_for_request(client: httpx.Client, hostname: str, address: str) -> None:
     transport = getattr(client, "_transport", None)
-    if isinstance(transport, PinnedHTTPTransport):
-        transport.pin_host(hostname, address)
+    if not isinstance(transport, PinningTransport):
+        raise ValueError("news client transport must implement pin_host")
+    transport.pin_host(hostname, address)
 
 
 def _request_bounded(
-    client: httpx.Client, url: str, *, params: dict[str, str] | None, resolver: Callable[[str], tuple[str, ...]]
+    client: httpx.Client,
+    url: str,
+    *,
+    params: dict[str, str] | None,
+    resolver: Callable[[str], tuple[str, ...]],
 ) -> tuple[httpx.Response, bytes]:
     _validate_http_url(url)
     if not _request_domain_allowed(url):
@@ -150,7 +207,9 @@ def _request_bounded(
         try:
             with client.stream("GET", url, params=params, follow_redirects=False) as response:
                 if response.status_code in _TRANSIENT_STATUSES:
-                    error = httpx.HTTPStatusError("transient RSS response", request=response.request, response=response)
+                    error = httpx.HTTPStatusError(
+                        "transient RSS response", request=response.request, response=response
+                    )
                     if attempt == 0:
                         last_error = error
                         continue
@@ -201,7 +260,9 @@ def _get_bounded(client: httpx.Client, url: str, *, params: dict[str, str] | Non
     return _get_bounded_with_redirects(client, url, params=params, resolver=_resolve_hostname)[1]
 
 
-def _resolve_url(client: httpx.Client, url: str, *, resolver: Callable[[str], tuple[str, ...]]) -> str:
+def _resolve_url(
+    client: httpx.Client, url: str, *, resolver: Callable[[str], tuple[str, ...]]
+) -> str:
     current = url
     for redirect_count in range(_MAX_REDIRECTS + 1):
         response, _ = _request_bounded(client, current, params=None, resolver=resolver)
@@ -220,9 +281,17 @@ def _resolve_url(client: httpx.Client, url: str, *, resolver: Callable[[str], tu
     raise ValueError("news redirect resolution failed")
 
 
-def _parse_feed(content: bytes, *, client: httpx.Client, collected_at: dt.datetime, resolver: Callable[[str], tuple[str, ...]]) -> tuple[NewsItem, ...]:
+def _parse_feed(
+    content: bytes,
+    *,
+    client: httpx.Client,
+    collected_at: dt.datetime,
+    resolver: Callable[[str], tuple[str, ...]],
+) -> tuple[NewsItem, ...]:
     try:
-        root = ElementTree.fromstring(content, forbid_dtd=True, forbid_entities=True, forbid_external=True)
+        root = ElementTree.fromstring(
+            content, forbid_dtd=True, forbid_entities=True, forbid_external=True
+        )
     except DefusedXmlException as exc:
         raise ValueError("news XML contains a forbidden DTD or entity") from exc
     except ElementTree.ParseError as exc:
@@ -248,7 +317,11 @@ def _parse_feed(content: bytes, *, client: httpx.Client, collected_at: dt.dateti
             if published_at < oldest or published_at > collected_at:
                 continue
             final_url = _resolve_url(client, source_url or link, resolver=resolver)
-            if len(title) > _MAX_TITLE_LENGTH or len(source) > _MAX_SOURCE_LENGTH or len(final_url) > _MAX_URL_LENGTH:
+            if (
+                len(title) > _MAX_TITLE_LENGTH
+                or len(source) > _MAX_SOURCE_LENGTH
+                or len(final_url) > _MAX_URL_LENGTH
+            ):
                 raise ValueError("news item exceeds a field bound")
         except (ValueError, httpx.HTTPError, TypeError):
             continue
@@ -260,14 +333,28 @@ def _parse_feed(content: bytes, *, client: httpx.Client, collected_at: dt.dateti
         seen_urls.add(final_url)
         seen_titles.add(normalized_title)
         digest = hashlib.sha256(f"{final_url}\n{published_at.isoformat()}".encode()).hexdigest()
-        accepted.append(NewsItem(news_id=f"news-{digest[:16]}", title=title, source=source, final_url=final_url, published_at=published_at, collected_at=collected_at))
+        accepted.append(
+            NewsItem(
+                news_id=f"news-{digest[:16]}",
+                title=title,
+                source=source,
+                final_url=final_url,
+                published_at=published_at,
+                collected_at=collected_at,
+            )
+        )
         if len(accepted) == _MAX_ITEMS:
             break
     return tuple(accepted)
 
 
 class GoogleNewsRssTool:
-    def __init__(self, client: httpx.Client, *, resolver: Callable[[str], tuple[str, ...]] = _resolve_hostname) -> None:
+    def __init__(
+        self,
+        client: httpx.Client,
+        *,
+        resolver: Callable[[str], tuple[str, ...]] = _resolve_hostname,
+    ) -> None:
         self._client = client
         self._resolver = resolver
 
@@ -277,4 +364,6 @@ class GoogleNewsRssTool:
         content = _get_bounded_with_redirects(
             self._client, GOOGLE_NEWS_RSS, params=NEWS_PARAMS, resolver=self._resolver
         )[1]
-        return _parse_feed(content, client=self._client, collected_at=generated_at, resolver=self._resolver)
+        return _parse_feed(
+            content, client=self._client, collected_at=generated_at, resolver=self._resolver
+        )

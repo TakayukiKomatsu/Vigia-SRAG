@@ -11,20 +11,29 @@ from typing import Any
 VERSION = "2.2"
 DATE = "2026-07-29"
 DEFAULT_PATHS = (
+    ".agent/specs/01-data-foundation/spec.md",
+    ".agent/specs/01-data-foundation/tasks.md",
+    ".agent/specs/01-data-foundation/source-contracts.md",
+    ".agent/specs/01-data-foundation/acceptance.feature",
     ".agent/specs/02-epidemiological-metrics/spec.md",
     ".agent/specs/02-epidemiological-metrics/tasks.md",
+    ".agent/specs/02-epidemiological-metrics/acceptance.feature",
     ".agent/specs/03-agentic-reporting/spec.md",
     ".agent/specs/03-agentic-reporting/tasks.md",
+    ".agent/specs/03-agentic-reporting/acceptance.feature",
     ".agent/specs/04-governance-delivery/spec.md",
     ".agent/specs/04-governance-delivery/tasks.md",
+    ".agent/specs/04-governance-delivery/acceptance.feature",
     ".agent/specs/traceability.md",
     "README.md",
     "docs/architecture.html",
     "examples/live-smoke-result.json",
+    "examples/official-source-run.json",
 )
 MARKDOWN_METADATA_RE = re.compile(
     r"\A(?:---\n(?P<frontmatter>.*?)\n---\n|(?P<blockquote>(?:> [^\n]*\n)+))", re.DOTALL
 )
+GHERKIN_METADATA_RE = re.compile(r"\A(?P<comments>(?:#[^\n]*\n)+)")
 
 
 def _markdown_metadata(text: str) -> dict[str, str]:
@@ -54,15 +63,25 @@ def _metadata(path: Path) -> dict[str, str]:
                 re.IGNORECASE,
             )
         }
+    if path.suffix == ".feature":
+        match = GHERKIN_METADATA_RE.match(text)
+        if not match:
+            return {}
+        fields: dict[str, str] = {}
+        for line in match.group("comments").splitlines():
+            key, separator, value = line.removeprefix("#").strip().partition(":")
+            if separator:
+                fields[key.strip().lower().replace("_", " ")] = value.strip()
+        return fields
     if path.suffix == ".json":
         payload: Any = json.loads(text)
         release = payload.get("release", {}) if isinstance(payload, dict) else {}
-        return {str(key): str(value) for key, value in release.items()} if isinstance(release, dict) else {}
+        return (
+            {str(key): str(value) for key, value in release.items()}
+            if isinstance(release, dict)
+            else {}
+        )
     return {}
-
-
-def _allowed_status(status: str | None) -> bool:
-    return status in {"DRAFT", "EXTERNAL-BLOCKED"}
 
 
 def check_paths(root: Path, paths: tuple[str, ...] = DEFAULT_PATHS) -> tuple[str, ...]:
@@ -79,12 +98,16 @@ def check_paths(root: Path, paths: tuple[str, ...] = DEFAULT_PATHS) -> tuple[str
             continue
         version = fields.get("version") or fields.get("release-version")
         date = fields.get("last updated") or fields.get("date") or fields.get("release-date")
-        status = fields.get("status") or fields.get("release-status")
         if version != VERSION:
             issues.append(f"missing_version:{relative}")
         if date != DATE:
             issues.append(f"missing_date:{relative}")
-        if not _allowed_status(status):
+        if path.suffix in {".md", ".feature"}:
+            if fields.get("document status") != "DRAFT":
+                issues.append(f"invalid_document_status:{relative}")
+            if fields.get("release status") != "EXTERNAL-BLOCKED":
+                issues.append(f"invalid_release_status:{relative}")
+        elif (fields.get("status") or fields.get("release-status")) != "EXTERNAL-BLOCKED":
             issues.append(f"invalid_release_status:{relative}")
     return tuple(issues)
 

@@ -1,6 +1,11 @@
+# Document Status: DRAFT
+# Release Status: EXTERNAL-BLOCKED
+# Version: 2.2
+# Date: 2026-07-29
+
 @draft @data-foundation
 Feature: Fundação de dados públicos fixados para relatórios Brasil de SRAG
-  Os cenários derivam do spec.md versão 2.1.
+  Os cenários derivam do spec.md versão 2.2.
 
   @ch-10 @ch-12 @fr-df-1 @nfr-df-2 @ac-df-1
   Scenario: Bloquear finalização sem contratos e fixture verificados

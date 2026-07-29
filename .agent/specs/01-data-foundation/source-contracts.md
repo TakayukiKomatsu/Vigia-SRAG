@@ -1,9 +1,12 @@
-# Anexo de contratos de fontes oficiais
+---
+Document Status: DRAFT
+Release Status: EXTERNAL-BLOCKED
+Version: 2.2
+Owner: T-DF-1
+Date: 2026-07-29
+---
 
-> Status: DRAFT
-> Version: 2.2
-> Owner: T-DF-1
-> Last Updated: 2026-07-29
+# Anexo de contratos de fontes oficiais
 
 Este anexo é normativo para SDD 01. `UNVERIFIED` é um bloqueio explícito, não
 um valor a ser completado por suposição. Nenhum spec dependente recebe
@@ -26,9 +29,10 @@ indisponível e não bloqueia SIVEP.
 aquisição SIVEP verificada, revalida o arquivo local e normaliza-o em streaming
 para JSONL antes de publicar o snapshot minimizado. Sem IBGE atestado, a tabela
 IBGE é vazia e mortalidade por 100 mil fica `unavailable`; CNES e PNI também
-são sempre tabelas vazias e deixam pressão/uso de UTI e cobertura influenza
-`unavailable`. A execução segue com qualidade `warning`, mas declara
-explicitamente `golden_eligible=false`. Dados brutos, JSONL intermediário,
+são sempre tabelas vazias e deixam pressão de UTI e cobertura influenza
+`unavailable`. O uso suplementar de UTI entre casos SRAG permanece `available`
+com SIVEP e não representa ocupação nacional. A execução segue com qualidade
+`warning`, mas declara explicitamente `golden_eligible=false`. Dados brutos,
 snapshots e run bundles são ignorados; nenhum deles é evidência rastreada no
 repositório.
 

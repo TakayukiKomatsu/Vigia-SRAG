@@ -62,26 +62,48 @@ SIVEP_SOURCE = OfficialSource(
     expected_data_rows=SIVEP_ROWS,
     dictionary_version="dicionario-de-dados-2019-a-2025.pdf (2026-01-29)",
     selected_column_mapping={
-        "notification_key": "NU_NOTIFIC", "notification_date": "DT_NOTIFIC",
-        "symptom_onset": "DT_SIN_PRI", "hospitalization_flag": "HOSPITAL",
-        "hospitalization_date": "DT_INTERNA", "hospitalization_uf": "SG_UF_INTE",
-        "icu_flag": "UTI", "icu_entry_date": "DT_ENTUTI", "icu_exit_date": "DT_SAIDUTI",
-        "evolution": "EVOLUCAO", "evolution_date": "DT_EVOLUCA",
-        "closure_date": "DT_ENCERRA", "digitization_date": "DT_DIGITA", "residence_uf": "SG_UF",
+        "notification_key": "NU_NOTIFIC",
+        "notification_date": "DT_NOTIFIC",
+        "symptom_onset": "DT_SIN_PRI",
+        "hospitalization_flag": "HOSPITAL",
+        "hospitalization_date": "DT_INTERNA",
+        "hospitalization_uf": "SG_UF_INTE",
+        "icu_flag": "UTI",
+        "icu_entry_date": "DT_ENTUTI",
+        "icu_exit_date": "DT_SAIDUTI",
+        "evolution": "EVOLUCAO",
+        "evolution_date": "DT_EVOLUCA",
+        "closure_date": "DT_ENCERRA",
+        "digitization_date": "DT_DIGITA",
+        "residence_uf": "SG_UF",
     },
     watermark="2026-07-26",
     relative_path="sivep/INFLUD26-27-07-2026.csv",
 )
 IBGE_SOURCE = OfficialSource(
-    key="ibge", family="ibge", identifier="POP2025_20260113.ods",
+    key="ibge",
+    family="ibge",
+    identifier="POP2025_20260113.ods",
     landing_url="https://www.ibge.gov.br/estatisticas/sociais/populacao/9103-estimativas-de-populacao.html",
     resource_url="https://ftp.ibge.gov.br/Estimativas_de_Populacao/Estimativas_2025/POP2025_20260113.ods",
-    license_reuse_statement="Public-domain aggregated official data; attribution to IBGE/DPE/COPIS required.",
+    license_reuse_statement=(
+        "Public-domain aggregated official data; attribution to IBGE/DPE/COPIS required."
+    ),
     license_evidence_url="https://www.ibge.gov.br/acesso-informacao/institucional/2018-05-31-15-17-49.html",
-    encoding="ods", expected_sha256=IBGE_SHA256, expected_size_bytes=IBGE_SIZE,
-    expected_data_rows=None, dictionary_version="POP2025_20260113.ods",
-    selected_column_mapping={"year": "BRASIL", "geography": "BRASIL", "population_official": "POPULAÇÃO ESTIMADA", "reference_date": "2025-07-01"},
-    watermark="2025-07-01", relative_path="ibge/POP2025_20260113.ods", optional=True,
+    encoding="ods",
+    expected_sha256=IBGE_SHA256,
+    expected_size_bytes=IBGE_SIZE,
+    expected_data_rows=None,
+    dictionary_version="POP2025_20260113.ods",
+    selected_column_mapping={
+        "year": "BRASIL",
+        "geography": "BRASIL",
+        "population_official": "POPULAÇÃO ESTIMADA",
+        "reference_date": "2025-07-01",
+    },
+    watermark="2025-07-01",
+    relative_path="ibge/POP2025_20260113.ods",
+    optional=True,
 )
 
 
@@ -109,24 +131,36 @@ def _atomic_json(path: Path, value: dict[str, Any]) -> None:
     os.close(descriptor)
     temporary = Path(name)
     try:
-        temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        temporary.write_text(
+            json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
         os.replace(temporary, path)
     finally:
         temporary.unlink(missing_ok=True)
 
 
-def acquire_source(client: httpx.Client, source: OfficialSource, output_root: Path) -> dict[str, Any]:
+def acquire_source(
+    client: httpx.Client, source: OfficialSource, output_root: Path
+) -> dict[str, Any]:
     """Download one artifact atomically and return its complete provenance record."""
     retrieved_at = _utc_now()
     record: dict[str, Any] = {
-        "key": source.key, "family": source.family, "identifier": source.identifier,
-        "status": "unavailable", "retrieved_at": retrieved_at,
-        "official_landing_url": source.landing_url, "official_resource_url": source.resource_url,
+        "key": source.key,
+        "family": source.family,
+        "identifier": source.identifier,
+        "status": "unavailable",
+        "retrieved_at": retrieved_at,
+        "official_landing_url": source.landing_url,
+        "official_resource_url": source.resource_url,
         "license_reuse_statement": source.license_reuse_statement,
-        "license_evidence_url": source.license_evidence_url, "encoding": source.encoding,
-        "expected_sha256": source.expected_sha256, "expected_size_bytes": source.expected_size_bytes,
-        "expected_data_rows": source.expected_data_rows, "dictionary_version": source.dictionary_version,
-        "selected_column_mapping": source.selected_column_mapping, "watermark": source.watermark,
+        "license_evidence_url": source.license_evidence_url,
+        "encoding": source.encoding,
+        "expected_sha256": source.expected_sha256,
+        "expected_size_bytes": source.expected_size_bytes,
+        "expected_data_rows": source.expected_data_rows,
+        "dictionary_version": source.dictionary_version,
+        "selected_column_mapping": source.selected_column_mapping,
+        "watermark": source.watermark,
         "optional": source.optional,
     }
     destination = output_root / source.relative_path
@@ -163,18 +197,31 @@ def acquire_source(client: httpx.Client, source: OfficialSource, output_root: Pa
     return record
 
 
-def acquire_all(output_root: Path, *, blocked_root: Path, sources: tuple[OfficialSource, ...] = (SIVEP_SOURCE, IBGE_SOURCE)) -> dict[str, Any]:
+def acquire_all(
+    output_root: Path,
+    *,
+    blocked_root: Path,
+    sources: tuple[OfficialSource, ...] = (SIVEP_SOURCE, IBGE_SOURCE),
+) -> dict[str, Any]:
     """Acquire fixed sources independently; only a failed SIVEP blocks execution."""
-    with httpx.Client(timeout=httpx.Timeout(60.0), follow_redirects=True, trust_env=False) as client:
+    with httpx.Client(
+        timeout=httpx.Timeout(60.0), follow_redirects=True, trust_env=False
+    ) as client:
         records = [acquire_source(client, source, output_root) for source in sources]
     result = {"schema_version": "1.0", "generated_at": _utc_now(), "sources": records}
     _atomic_json(output_root / "acquisition.json", result)
     sivep = next(item for item in records if item["key"] == "sivep")
     if sivep["status"] != "verified":
-        _atomic_json(blocked_root / "official-source-blocked.json", {
-            "schema_version": "1.0", "blocked_at": _utc_now(), "reason_code": "sivep_acquisition_blocked",
-            "sivep_status": sivep["status"], "failure_code": sivep.get("failure_code"),
-        })
+        _atomic_json(
+            blocked_root / "official-source-blocked.json",
+            {
+                "schema_version": "1.0",
+                "blocked_at": _utc_now(),
+                "reason_code": "sivep_acquisition_blocked",
+                "sivep_status": sivep["status"],
+                "failure_code": sivep.get("failure_code"),
+            },
+        )
     return result
 
 
@@ -184,7 +231,12 @@ def main() -> int:
     parser.add_argument("--blocked-root", type=Path, default=Path("runs"))
     args = parser.parse_args()
     result = acquire_all(args.output_root, blocked_root=args.blocked_root)
-    return 0 if next(item for item in result["sources"] if item["key"] == "sivep")["status"] == "verified" else 1
+    return (
+        0
+        if next(item for item in result["sources"] if item["key"] == "sivep")["status"]
+        == "verified"
+        else 1
+    )
 
 
 if __name__ == "__main__":

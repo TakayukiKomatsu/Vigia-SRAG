@@ -1,7 +1,14 @@
+---
+Version: 2.2
+Date: 2026-07-29
+Document Status: DRAFT
+Release Status: EXTERNAL-BLOCKED
+---
+
 # Tarefas — Métricas e gráficos epidemiológicos v2
 
-> Must: 7 tarefas. Todas no Dia 2. Stretch fica em `../stretch-backlog.md`. Version: 2.2.
-> Ledger 2026-07-29: evidência de implementação concluída para T-MT-1–T-MT-7, incluindo benchmark abaixo de cinco segundos e gate verde com influenza scoped como suplemento. Os checkboxes permanecem abertos porque a cadeia formal depende do gate T-DF-1/T-DF-7 ainda aberto.
+> Must: 7 tarefas. Todas no Dia 2. Stretch fica em `../stretch-backlog.md`.
+> Ledger 2026-07-29: no run oficial fresco, `case_growth`, `mortality_per_100k`, `hospital_cfr` e `icu_use` estavam disponíveis. `icu_pressure` está indisponível sem CNES e `influenza_coverage` sem PNI oficial; `icu_use` é proporção de casos SRAG, não ocupação nacional. Os checkboxes permanecem abertos.
 
 
 - [ ] **T-MT-1 [P0, D2, CH-11, CH-13, FR-MT-1, FR-MT-10, NFR-MT-2, AC-MT-1, AC-MT-10, depends: T-DF-7]:** Implementar contratos tipados de tempo, métrica, qualidade, proveniência, série e gráfico. **Evidence:** testes de calendário, watermark e schema verdes.
