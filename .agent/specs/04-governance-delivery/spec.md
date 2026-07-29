@@ -2,10 +2,10 @@
 
 > Status: DRAFT
 > Tier: extended
-> Version: 2.0
+> Version: 2.1
 > Owner: Indicium HealthCare PoC
 > Created: 2026-07-28
-> Last Updated: 2026-07-28
+> Last Updated: 2026-07-29
 
 ## Summary
 
@@ -23,12 +23,13 @@ pelo desafio.
 ## Goals
 
 - **FR-GD-1:** Validar golden run estrito com quatro métricas, dois
-  suplementos, dois gráficos, notícia live, comentário OpenAI válido e bundle
-  sanitizado completo.
+  suplementos, dois gráficos, notícia live, comentário válido de provedor
+  aprovado e bundle sanitizado completo. Somente influenza pode ser scoped
+  como suplemento explicitamente não-nacional.
 - **FR-GD-2:** Manter suítes separadas de degradação e segurança que não
   substituem o golden run.
-- **FR-GD-3:** Fornecer quickstarts determinístico e live; somente o live
-  requer `OPENAI_API_KEY`.
+- **FR-GD-3:** Fornecer quickstarts determinístico e live; o live requer a
+  chave do provedor selecionado, por padrão `OPEN_ROUTER_API_KEY`.
 - **FR-GD-4:** Publicar README completo e HTML de referência sanitizado com
   rótulos live/não-live inequívocos.
 - **FR-GD-5:** Publicar fonte e PDF legível do diagrama conceitual com todos os
@@ -46,7 +47,7 @@ pelo desafio.
 - **NFR-GD-2:** Artefatos liberados não contêm segredo, documento restrito,
   registro clínico, chave técnica, payload bruto ou corpo integral de artigo.
 - **NFR-GD-3:** Quickstart determinístico funciona em clone limpo sem editar
-  código, credencial ou chamada live de OpenAI/RSS.
+  código, credencial ou chamada live de provedor/RSS.
 - **NFR-GD-4:** O PDF é legível e todos os componentes/limites exigidos podem
   ser identificados visualmente.
 - **NFR-GD-5:** Qualidade, CI e secret scan passam no commit de release.
@@ -72,28 +73,31 @@ evidências registradas.
 
 O relatório de referência passa somente se contiver:
 
-1. aumento de casos real, disponível e não-scoped nacionalmente;
-2. mortalidade populacional real, disponível e não-scoped nacionalmente;
+1. aumento de casos real, disponível e nacional sem `population_scope`;
+2. mortalidade populacional real, disponível e nacional sem `population_scope`;
 3. pressão estimada de SRAG sobre capacidade registrada de UTI real,
-   disponível e não-scoped nacionalmente;
-4. cobertura oficial de influenza 2026 real, disponível, elegível
-   nacionalmente (não limitada a regiões específicas) e publicada até `as_of`;
-5. letalidade hospitalar e uso de UTI suplementares, não-scoped;
+   disponível e nacional sem `population_scope`;
+4. cobertura oficial de influenza 2026 real, disponível, publicada até
+   `as_of`, com `population_scope` explícito; escopo regional é permitido
+   somente aqui e nunca recebe rótulo nacional;
+5. letalidade hospitalar e uso de UTI suplementares, nacionais sem
+   `population_scope`;
 6. gráfico diário completo de 30 dias;
 7. gráfico mensal completo de 12 meses;
 8. ao menos uma notícia recente válida coletada ao vivo;
-9. claims OpenAI estruturadas e validadas;
+9. claims estruturadas e validadas de provedor/modelo aprovado;
 10. fontes, métodos, watermarks, qualidade, limitações e `run_id`;
 11. `request.json`, `evidence.json`, `audit.jsonl`, `charts/`, `report.html` e
     `manifest.json` íntegros e sanitizados.
 
 Qualquer ausência falha o golden. Métrica indisponível não satisfaz o item
-correspondente. Observação com escopo geográfico ou cobertura limitada não é
-elegível e deve renderizar explicitamente como limitada.
+correspondente. Influenza scoped é suplemento limitado elegível; escopo
+geográfico ou populacional em qualquer das outras cinco métricas reprova o
+gate. Toda observação scoped renderiza explicitamente como não-nacional.
 
 ## Degradation and Security
 
-Casos de notícia, OpenAI ou métrica indisponível e falhas de auditoria são
+Casos de notícia, provedor de modelo ou métrica indisponível e falhas de auditoria são
 testados separadamente segundo SDD 03. Um resultado degradado pode demonstrar
 resiliência, mas nunca é selecionado como relatório de referência.
 
@@ -104,18 +108,18 @@ inventado, vazamento de campo, segredo e evento crítico ausente.
 
 ### Deterministic
 
-- OpenAI fake;
+- adaptador fake;
 - RSS fixo;
 - fixture permitida;
 - nenhuma credencial;
-- nenhuma chamada OpenAI/RSS live;
+- nenhuma chamada live de provedor/RSS;
 - sem edição de código;
 - relatório marcado como demonstração não-live.
 
 ### Live
 
-- requer somente `OPENAI_API_KEY`;
-- usa o modelo padrão aprovado e registra seu nome exato;
+- requer `OPEN_ROUTER_API_KEY` por padrão ou a chave do provedor explicitamente selecionado;
+- usa provedor/modelo aprovados e registra modelos solicitado e servido;
 - consulta Google News RSS durante a execução;
 - usa snapshots de saúde fixados;
 - produz candidato ao golden run, sujeito a todos os gates.
@@ -123,8 +127,8 @@ inventado, vazamento de campo, segredo e evento crítico ausente.
 ## README and Reference Artifact
 
 O README cobre instalação, configuração, arquitetura, fontes e aquisição,
-fórmulas, períodos, qualidade, grafo, tools, OpenAI, notícias, auditoria,
-guardrails, privacidade, testes, quickstarts, limitações e leitura do exemplo.
+fórmulas, períodos, qualidade, grafo, tools, provedores de modelo, notícias,
+auditoria, guardrails, privacidade, testes, quickstarts, limitações e exemplo.
 O HTML de referência é sanitizado e informa se é live.
 
 ## Architecture PDF
@@ -136,7 +140,7 @@ O diagrama mostra:
 - DuckDB;
 - tools de métricas, gráficos e notícias;
 - LangGraph orquestrador;
-- OpenAI e validador;
+- OpenRouter/OpenAI e validador;
 - renderer HTML;
 - `AuditSink` e run bundle;
 - fluxos, agregação e limites de dados sensíveis.
@@ -170,7 +174,7 @@ Release só termina quando todos os passos e o smoke live forem registrados.
 
 - Dia 1: contratos, pacote e quatro fontes no DuckDB.
 - Dia 2: métricas, suplementos, qualidade, séries e gráficos.
-- Dia 3: tools, LangGraph, RSS, OpenAI, validação, auditoria e HTML.
+- Dia 3: tools, LangGraph, RSS, provedores, validação, auditoria e HTML.
 - Dia 4: golden/degradação, README, exemplo e arquitetura PDF.
 - Dia 5: clone limpo, CI, secret scan, smoke live, revisão visual e publicação.
 
@@ -184,8 +188,8 @@ Stretch não começa antes dos 28 itens Must e do golden estrito.
   sem elegibilidade golden.
 - **AC-GD-3 (FR-GD-3, NFR-GD-3):** Quickstart determinístico funciona no clone
   limpo sem credencial, rede live ou edição.
-- **AC-GD-4 (FR-GD-3):** Quickstart live requer somente a chave OpenAI e
-  registra modelo/RSS live.
+- **AC-GD-4 (FR-GD-3):** Quickstart live requer somente a chave do provedor
+  selecionado e registra modelos solicitado/servido e RSS live.
 - **AC-GD-5 (FR-GD-4):** README e HTML sanitizado cobrem documentação e rótulo.
 - **AC-GD-6 (FR-GD-5, NFR-GD-4):** PDF é legível e contém todos os componentes
   e limites.
@@ -193,9 +197,9 @@ Stretch não começa antes dos 28 itens Must e do golden estrito.
   files, histórico e ignores passam.
 - **AC-GD-8 (FR-GD-7):** URL pública e clone não autenticado reproduzem a demo
   e expõem evidência de release.
-- **AC-GD-10 (FR-GD-1):** Observações com escopo geográfico ou cobertura
-  regional limitada nunca são selecionadas como golden; devem renderizar como
-  explicitamente limitadas e não-nacionais.
+- **AC-GD-10 (FR-GD-1):** Influenza pode ter escopo regional como suplemento
+  explicitamente não-nacional; qualquer escopo nas outras cinco métricas
+  reprova o golden.
 - **AC-GD-9 (FR-GD-8):** O backlog possui 7+7+8+6 tarefas completas nos Dias
   1–5 e Stretch isolado.
 
@@ -212,10 +216,15 @@ Stretch não começa antes dos 28 itens Must e do golden estrito.
 
 ## Open Questions
 
-Os gates upstream e a URL pública ainda não existem; são bloqueadores
-explícitos. Este spec permanece `DRAFT`.
+O smoke OpenRouter e o gate estrito sobre fixture permitida estão verdes.
+Contratos oficiais restantes, bundle de referência real e URL pública continuam
+como bloqueadores explícitos; este spec permanece `DRAFT`.
 
 ## Change Log
+
+- 2026-07-29 — v2.1: OpenRouter padrão, OpenAI explícito, modelos
+  solicitado/servido auditados e PNI scoped permitido somente como suplemento;
+  release público permanece handoff do owner.
 
 - 2026-07-28 — v2.0: golden estrito; degradação separada; HTML apenas;
   quickstarts distintos; CI/secret scan; PDF conceitual e publicação pública

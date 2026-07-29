@@ -2,10 +2,10 @@
 
 > Status: DRAFT
 > Tier: extended
-> Version: 2.0
+> Version: 2.1
 > Owner: Indicium HealthCare PoC
 > Created: 2026-07-28
-> Last Updated: 2026-07-28
+> Last Updated: 2026-07-29
 
 ## Summary
 
@@ -35,10 +35,11 @@ enganoso. O LLM não participa dos cálculos.
   por paciente-dias SIVEP sobre leito-dias CNES compatíveis.
 - **FR-MT-6:** Calcular a proporção suplementar de internações SRAG com uso de
   UTI, sem rotulá-la como ocupação.
-- **FR-MT-7:** Selecionar a observação oficial mais recente da campanha de
-  influenza 2026 para a população-alvo, com escopo de população explícito e
-  publicada até `as_of`; se não publicada no cutoff, resultado indisponível com
-  motivo estruturado.
+- **FR-MT-7:** Selecionar como indicador suplementar a observação oficial mais
+  recente da campanha de influenza 2026 para a população-alvo, preservando
+  `population_scope` explícito e cutoff em `as_of`; o escopo regional é
+  permitido, mas nunca recebe rótulo nacional. Se não publicada no cutoff,
+  o resultado é indisponível com motivo estruturado.
 - **FR-MT-8:** Produzir série diária de 30 dias encerrada em `as_of`, marcando
   os 14 dias mais recentes como provisórios.
 - **FR-MT-9:** Produzir série dos 12 meses-calendário completos anteriores ao
@@ -161,10 +162,11 @@ Preserva campanha, grupos-alvo, residência, numerador, denominador, cobertura
 publicada, atualização e fonte. Não usa população geral inventada nem
 reconstrói esquemas a partir do SIVEP.
 
-Cada observação inclui um campo explícito `population_scope` que identifica as
-regiões de cobertura (p. ex.: `NE,CO,S,SE` para a campanha de março–maio de
-2026; `N` para a campanha do segundo semestre). Observações com escopo menor
-que Brasil inteiro nunca recebem rótulo "nationwide" e não satisfazem golden.
+Cada observação inclui `population_scope` explícito com as regiões cobertas
+(p. ex.: `NE,CO,S,SE` para a campanha de março–maio de 2026; `N` para a
+campanha do segundo semestre). Escopo menor que Brasil inteiro nunca recebe
+rótulo `nationwide`, mas pode compor o golden como indicador suplementar
+limitado. As outras cinco métricas do pacote permanecem nacionais e sem escopo.
 
 Se nenhuma observação elegível foi publicada até `as_of`, o resultado fica
 `unavailable` com `reason` estruturado indicando "não publicada até cutoff".
@@ -208,7 +210,7 @@ ChartResult:
 - completude `<70%`: indisponível;
 - coluna crítica, hash, fonte ou cobertura inválida sobrepõe a porcentagem;
 - uma métrica indisponível não inventa substituto;
-- o golden run exige todas as quatro métricas e ambas as séries disponíveis.
+- o golden run exige as seis métricas e ambas as séries disponíveis; somente a cobertura de influenza pode ter `population_scope` regional explícito.
 
 ## Security and Compliance
 
@@ -229,8 +231,9 @@ determinístico; o LLM recebe somente resultados agregados validados.
   rótulo/limitação corretos e rejeita valor acima de 100%.
 - **AC-MT-6 (FR-MT-6):** Uso de UTI aparece apenas como proporção suplementar.
 - **AC-MT-7 (FR-MT-7):** Influenza usa a observação oficial elegível com
-  população-alvo definida e escopo de população explícito; indisponível se não
-  publicada até `as_of` com motivo estruturado.
+  população-alvo e `population_scope` explícitos; escopo regional permanece
+  suplementar e não-nacional, e ausência de publicação até `as_of` produz
+  estado indisponível com motivo estruturado.
 - **AC-MT-8 (FR-MT-8, NFR-MT-5):** Série/gráfico diário têm 30 pontos fiéis e
   14 provisórios.
 - **AC-MT-9 (FR-MT-9, NFR-MT-5):** Série/gráfico mensal têm 12 meses completos
@@ -251,10 +254,15 @@ determinístico; o LLM recebe somente resultados agregados validados.
 
 ## Open Questions
 
-Os códigos SIVEP, categorias CNES, população e observação PNI dependem do
-anexo SDD 01 verificado. Enquanto isso, este spec permanece `DRAFT`.
+Os códigos SIVEP, categorias CNES, população e a evidência oficial PNI dependem
+do anexo SDD 01. A política de escopo suplementar está fechada, mas este spec
+permanece `DRAFT` enquanto contratos oficiais ainda estiverem `UNVERIFIED`.
 
 ## Change Log
+
+- 2026-07-29 — v2.1: cobertura PNI regional mantida como suplemento limitado,
+  sem rótulo nacional; somente as outras cinco métricas exigem escopo nacional
+  para o golden run.
 
 - 2026-07-28 — v2.0: Brasil apenas; mortalidade populacional obrigatória;
   letalidade e uso de UTI suplementares; proxy UTI acima de 100% indisponível;

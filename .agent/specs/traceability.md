@@ -18,13 +18,13 @@ e evidência planejada. Não significa que a aplicação já foi implementada.
 | `CH-04` | Taxa de aumento de casos | `FR-MT-2` | `AC-MT-2` | `T-MT-2`, `T-MT-6` | `MetricResult` com duas semanas e delta |
 | `CH-05` | Taxa de mortalidade | `FR-MT-3` | `AC-MT-3` | `T-MT-2`, `T-MT-6` | óbitos por SRAG por 100 mil com fonte IBGE |
 | `CH-06` | Taxa de ocupação de UTI | `FR-MT-5` | `AC-MT-5` | `T-MT-3`, `T-MT-6` | proxy rotulado e limitação de não ocupação observada |
-| `CH-07` | Taxa de vacinação com escopo elegível | `FR-MT-7`, `FR-AR-9`, `FR-GD-1` | `AC-MT-7`, `AC-AR-10`, `AC-GD-10` | `T-MT-4`, `T-MT-6`, `T-AR-7`, `T-GD-1`, `T-GD-2` | cobertura oficial influenza 2026, escopo de população explícito, não-regional; scoped observações renderizam como limitadas, nunca golden |
+| `CH-07` | Taxa de vacinação com escopo elegível | `FR-MT-7`, `FR-AR-9`, `FR-GD-1` | `AC-MT-7`, `AC-AR-10`, `AC-GD-10` | `T-MT-4`, `T-MT-6`, `T-AR-7`, `T-GD-1`, `T-GD-2` | cobertura oficial influenza 2026 com `population_scope` explícito; escopo regional é suplemento não-nacional elegível, enquanto escopo nas outras cinco métricas reprova o golden |
 | `CH-08` | Gráfico diário de 30 dias | `FR-MT-8`, `FR-MT-10` | `AC-MT-8` | `T-MT-5`, `T-MT-6` | série de 30 pontos e gráfico/hash |
 | `CH-09` | Gráfico mensal de 12 meses | `FR-MT-9`, `FR-MT-10` | `AC-MT-9` | `T-MT-5`, `T-MT-6` | série de 12 meses completos e gráfico/hash |
 | `CH-10` | Tratamento de dados reais problemáticos | `FR-DF-1`, `FR-DF-2`, `FR-DF-3`, `FR-DF-4`, `FR-DF-7` | `AC-DF-1`, `AC-DF-2`, `AC-DF-3`, `AC-DF-6`, `AC-DF-7`, `AC-DF-8` | `T-DF-1`, `T-DF-2`, `T-DF-3`, `T-DF-5`, `T-DF-6`, `T-DF-7` | contratos, fixture, qualidade, quarentena e benchmark |
 | `CH-11` | Arquitetura justificável | `FR-DF-6`, `FR-MT-1`, `FR-MT-10`, `FR-AR-2`, `FR-AR-3`, `FR-AR-10` | `AC-DF-5`, `AC-MT-1`, `AC-MT-10`, `AC-AR-1`, `AC-AR-2`, `AC-AR-10`, `AC-AR-11` | `T-DF-4`, `T-MT-1`, `T-AR-1`, `T-AR-2`, `T-AR-4`, `T-AR-6` | módulos, contratos tipados, tools, grafo, DuckDB e limites/auditoria |
 | `CH-12` | Governança, transparência e decisões | `FR-DF-1`, `FR-DF-6`, `FR-DF-8`, `FR-AR-10`, `FR-GD-1` | `AC-DF-1`, `AC-DF-5`, `AC-DF-7`, `AC-AR-10`, `AC-AR-11`, `AC-GD-1` | `T-DF-1`, `T-DF-5`, `T-DF-7`, `T-AR-1`, `T-AR-6`, `T-GD-1` | `audit.jsonl`, manifests, eventos, hashes, run ID e limites críticos |
-| `CH-13` | Guardrails | `FR-DF-7`, `FR-DF-8`, `FR-AR-1`, `FR-AR-4`, `FR-AR-5`, `FR-AR-7`, `FR-AR-9`, `FR-AR-10`, `FR-GD-1` | `AC-DF-6`, `AC-DF-7`, `AC-AR-4`, `AC-AR-5`, `AC-AR-7`, `AC-AR-9`, `AC-AR-10`, `AC-AR-11`, `AC-GD-10` | `T-DF-5`, `T-DF-6`, `T-AR-1`, `T-AR-4`, `T-AR-5`, `T-AR-7`, `T-GD-2` | eventos de bloqueio, testes adversariais, rejeição de observações scoped e limites críticos |
+| `CH-13` | Guardrails | `FR-DF-7`, `FR-DF-8`, `FR-AR-1`, `FR-AR-4`, `FR-AR-5`, `FR-AR-7`, `FR-AR-9`, `FR-AR-10`, `FR-GD-1` | `AC-DF-6`, `AC-DF-7`, `AC-AR-4`, `AC-AR-5`, `AC-AR-7`, `AC-AR-9`, `AC-AR-10`, `AC-AR-11`, `AC-GD-10` | `T-DF-5`, `T-DF-6`, `T-AR-1`, `T-AR-4`, `T-AR-5`, `T-AR-7`, `T-GD-2` | eventos de bloqueio, testes adversariais, exceção scoped exclusiva para PNI influenza, rejeição scoped nas demais métricas e limites críticos |
 | `CH-14` | Uso de tools | `FR-AR-3`, `FR-AR-4` | `AC-AR-2`, `AC-AR-3` | `T-AR-2`, `T-AR-3` | schemas e tool-call events |
 | `CH-15` | Dados sensíveis minimizados | `FR-DF-5`, `NFR-DF-3`, `NFR-AR-5`, `NFR-GD-2`, `FR-AR-9` | `AC-DF-4`, `AC-AR-5`, `AC-AR-10`, `AC-GD-7`, `AC-GD-10` | `T-DF-4`, `T-AR-4`, `T-AR-7`, `T-GD-2`, `T-GD-5` | varredura de campos, artefatos sanitizados e observações scoped com limitação explícita |
 | `CH-16` | Clean Code | `NFR-DF-1`, `NFR-MT-1`, `NFR-MT-3`, `NFR-AR-3`, `FR-GD-6` | `AC-DF-5`, `AC-MT-11`, `AC-AR-12`, `AC-GD-7` | `T-DF-6`, `T-MT-6`, `T-AR-7`, `T-GD-5` | pytest, Ruff, mypy e módulos tipados |
@@ -35,6 +35,5 @@ e evidência planejada. Não significa que a aplicação já foi implementada.
 ## Review Result
 
 - Cobertura documental v2: `COVERED BY CONTRACT`.
-- Implementação: `NOT STARTED`.
-- Finalização: `BLOCKED` pelos contratos/fixture SDD 01, testes de métricas,
-  smoke OpenAI/RSS, golden run e release público.
+- Implementação: `IMPLEMENTED LOCALLY`; suíte, smoke OpenRouter/RSS e gate estrito sobre fixture permitida possuem evidência reproduzida.
+- Finalização: `BLOCKED` pelos contratos oficiais ainda `UNVERIFIED`, bundle de referência baseado integralmente em dados oficiais, URL pública e clone não autenticado.

@@ -275,7 +275,7 @@ Somente os seguintes códigos `COD_LEITO` são aceitos em CNES 202606:
 - Observação publicada: **2026-07-29 06:31:04**
 - Data padrão as_of: **2026-07-26**
 - Relação: **Posterior** ao as_of (violaria contrato temporal)
-- **Ação**: Elevar as_of para ≥2026-07-29, OU descartar PNI para as_of=2026-07-26
+- **Ação**: Elevar `as_of` para ≥2026-07-29 ou manter a métrica `unavailable` para `as_of=2026-07-26`; nunca retroagir o cutoff.
 
 ### Bloqueadores — PNI
 1. **B1 — Ineligibilidade Temporal**: Posterior a as_of=2026-07-26
@@ -291,11 +291,16 @@ Somente os seguintes códigos `COD_LEITO` são aceitos em CNES 202606:
 
 **Observação PNI 2026 NE/CO/S/SE**:
 - População-alvo elegível (population_scope): NE, CO, S, SE (regional, não nacional)
-- Nunca rotulada como "nacional" ou "golden"
+- Nunca rotulada como nacional; quando elegível pelo cutoff, permanece suplemento limitado
 - **Elegível somente se publicada ≤ as_of solicitado**
 - Painel atual (2026-07-29 06:31:04) > as_of padrão (2026-07-26) → `INELIGIBLE`
-- Para as_of ≥ 2026-07-29: PNI apareceria elegível, mas bloqueadores de evidência prevalecem
-- Para as_of < 2026-07-29: PNI sempre excluída
+- Para `as_of` ≥2026-07-29: pode participar do golden como suplemento scoped, desde que os bloqueadores de evidência estejam resolvidos
+- Para `as_of` <2026-07-29: fica indisponível e não satisfaz a métrica
+
+**Política de golden rebaselined**: PNI influenza é a única métrica autorizada
+a carregar `population_scope` regional. Ela nunca satisfaz um requisito
+nacional, mas pode integrar o golden como suplemento não-nacional. As outras
+cinco métricas devem permanecer nacionais e sem escopo.
 
 ---
 
@@ -364,7 +369,7 @@ T-DF-1 permanece **DRAFT** enquanto os seguintes itens forem `UNVERIFIED` ou `IN
 10. **Licença CC BY-ND**: Derivadas permitidas?
 
 ### PNI
-11. **Ineligibilidade temporal**: Painel 2026-07-29 > as_of=2026-07-26 — elevar as_of OU remover PNI
+11. **Ineligibilidade temporal**: Painel 2026-07-29 > as_of=2026-07-26 — elevar `as_of` ou manter PNI indisponível
 12. **Discrepância denominador**: 47.424.778 vs 46.718.474
 13. **Campanha Norte 2º semestre**: Ainda pendente em 2026-07-29
 14. **CSV raw**: SHA-256, tamanho, row count, encoding, delimiter

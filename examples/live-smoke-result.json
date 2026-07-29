@@ -5,10 +5,23 @@
     "accepted_items": 1,
     "sources": ["G1"]
   },
-  "openai": {
-    "status": "failed",
-    "requested_model": "gpt-5.6",
-    "reason": "OpenAI API returned 429 insufficient_quota; billing or project quota is not available"
+  "commentary": {
+    "status": "success",
+    "provider": "openrouter",
+    "requested_model": "openrouter/free",
+    "served_model": "google/gemma-4-26b-a4b-it:free",
+    "claim_count": 3,
+    "grounding_validation": "passed",
+    "fallback_used": false
   },
-  "golden_status_promoted": false
+  "report_graph": {
+    "status": "success",
+    "fixture": "synthetic_test_fixture",
+    "strict_gate_eligible": true
+  },
+  "golden_status_promoted": false,
+  "promotion_blockers": [
+    "official_source_contracts",
+    "public_reference_bundle"
+  ]
 }
