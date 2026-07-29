@@ -19,6 +19,7 @@ runs/
 # Agent-local state and restricted challenge material
 .omc/
 .superpowers/
+.worktrees/
 Desafio de GenAI.txt
 
 # Operating-system metadata
