@@ -9,6 +9,12 @@ from pathlib import Path
 import pytest
 from data.test_publish import _artifact, _contract, _normalization, _quality, _source
 
+from srag_report.agent.commentary import (
+    DEFAULT_OPENAI_MODEL,
+    DEFAULT_OPENROUTER_MODEL,
+    OpenAICommentaryAdapter,
+    OpenRouterCommentaryAdapter,
+)
 from srag_report.cli import main
 from srag_report.data.publish import publish_snapshot
 from srag_report.metrics.time import WatermarkError
@@ -66,12 +72,11 @@ def test_demo_run_bundle_is_byte_deterministic_across_processes(tmp_path: Path) 
     assert all((left / path).read_bytes() == (right / path).read_bytes() for path in left_files)
 
 
-def test_live_mode_requires_only_declared_openai_key(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_live_mode_requires_default_openrouter_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("OPEN_ROUTER_API_KEY", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
-    with pytest.raises(SystemExit, match="OPENAI_API_KEY is required"):
+    with pytest.raises(SystemExit, match="OPEN_ROUTER_API_KEY is required"):
         main(
             [
                 "live",
@@ -85,6 +90,103 @@ def test_live_mode_requires_only_declared_openai_key(
                 "live-run",
             ]
         )
+
+
+def test_live_mode_requires_key_for_selected_openai_provider(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("OPEN_ROUTER_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    with pytest.raises(SystemExit, match="OPENAI_API_KEY is required"):
+        main(
+            [
+                "live",
+                "--provider",
+                "openai",
+                "--snapshot",
+                "fixed.duckdb",
+                "--snapshot-id",
+                "fixed",
+                "--as-of",
+                "2026-07-28",
+                "--run-id",
+                "live-run",
+            ]
+        )
+
+
+@pytest.mark.parametrize(
+    ("provider_args", "key_name", "adapter_type", "expected_model"),
+    [
+        ([], "OPEN_ROUTER_API_KEY", OpenRouterCommentaryAdapter, DEFAULT_OPENROUTER_MODEL),
+        (
+            ["--provider", "openai"],
+            "OPENAI_API_KEY",
+            OpenAICommentaryAdapter,
+            DEFAULT_OPENAI_MODEL,
+        ),
+        (
+            ["--provider", "openrouter", "--model", "qwen/qwen3:free"],
+            "OPEN_ROUTER_API_KEY",
+            OpenRouterCommentaryAdapter,
+            "qwen/qwen3:free",
+        ),
+    ],
+)
+def test_live_selects_provider_adapter_and_model(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    provider_args: list[str],
+    key_name: str,
+    adapter_type: type[OpenRouterCommentaryAdapter] | type[OpenAICommentaryAdapter],
+    expected_model: str,
+) -> None:
+    raw = tmp_path / "source.csv"
+    raw.write_text("synthetic\n", encoding="utf-8")
+    published = publish_snapshot(
+        tmp_path / "snapshots",
+        snapshot_id="published-snapshot",
+        artifact=_artifact(tmp_path),
+        contract=_contract(_source(raw)),
+        normalization=[_normalization()],
+        quality=_quality("published-snapshot"),
+        generated_at=dt.datetime(2026, 7, 28, 12, tzinfo=dt.UTC),
+        as_of=dt.date(2026, 7, 26),
+    )
+    monkeypatch.delenv("OPEN_ROUTER_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setenv(key_name, "test-only-key")
+    captured: dict[str, object] = {}
+
+    def fake_execute(**kwargs: object) -> Path:
+        captured.update(kwargs)
+        return tmp_path / "runs" / "live-run"
+
+    monkeypatch.setattr("srag_report.cli._execute", fake_execute)
+
+    assert (
+        main(
+            [
+                "live",
+                *provider_args,
+                "--snapshot",
+                str(published / "analytics.duckdb"),
+                "--snapshot-id",
+                "published-snapshot",
+                "--as-of",
+                "2026-07-26",
+                "--run-id",
+                "live-run",
+                "--output-root",
+                str(tmp_path / "runs"),
+            ]
+        )
+        == 0
+    )
+    commentary = captured["commentary"]
+    assert isinstance(commentary, adapter_type)
+    assert commentary.requested_model == expected_model
 
 
 def test_live_rejects_as_of_after_published_snapshot_watermark(
@@ -102,7 +204,7 @@ def test_live_rejects_as_of_after_published_snapshot_watermark(
         generated_at=dt.datetime(2026, 7, 28, 12, tzinfo=dt.UTC),
         as_of=dt.date(2026, 7, 26),
     )
-    monkeypatch.setenv("OPENAI_API_KEY", "test-only-key")
+    monkeypatch.setenv("OPEN_ROUTER_API_KEY", "test-only-key")
 
     with pytest.raises(WatermarkError):
         main(

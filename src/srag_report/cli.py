@@ -9,7 +9,14 @@ from typing import Literal
 
 import httpx
 
-from .agent.commentary import FakeCommentaryAdapter, OpenAICommentaryAdapter
+from .agent.commentary import (
+    DEFAULT_OPENAI_MODEL,
+    DEFAULT_OPENROUTER_MODEL,
+    CommentaryAdapter,
+    FakeCommentaryAdapter,
+    OpenAICommentaryAdapter,
+    OpenRouterCommentaryAdapter,
+)
 from .agent.graph import GraphDependencies, NewsTool, run_report
 from .agent.models import NewsItem, ReportRequest
 from .audit.sink import AuditSink
@@ -65,7 +72,7 @@ def _execute(
     snapshot_watermark: dt.date,
     watermarks: Mapping[str, str],
     news: NewsTool,
-    commentary: FakeCommentaryAdapter | OpenAICommentaryAdapter,
+    commentary: CommentaryAdapter,
     execution_mode: Literal["deterministic", "live"],
 ) -> Path:
     workspace = RunWorkspace(output_root, request)
@@ -113,9 +120,17 @@ def _run_demo(args: argparse.Namespace) -> int:
 
 
 def _run_live(args: argparse.Namespace) -> int:
-    api_key = os.environ.get("OPENAI_API_KEY")
+    provider = str(args.provider)
+    if provider == "openrouter":
+        key_name = "OPEN_ROUTER_API_KEY"
+        default_model = DEFAULT_OPENROUTER_MODEL
+    else:
+        key_name = "OPENAI_API_KEY"
+        default_model = DEFAULT_OPENAI_MODEL
+    api_key = os.environ.get(key_name)
     if not api_key:
-        raise SystemExit("OPENAI_API_KEY is required for live mode")
+        raise SystemExit(f"{key_name} is required for live mode")
+    model = str(args.model or default_model)
     as_of = _date(args.as_of)
     snapshot = Path(args.snapshot)
     manifest = load_published_snapshot_manifest(snapshot, expected_snapshot_id=args.snapshot_id)
@@ -128,6 +143,11 @@ def _run_live(args: argparse.Namespace) -> int:
     with httpx.Client(
         timeout=httpx.Timeout(15.0), follow_redirects=True, max_redirects=5
     ) as client:
+        commentary: CommentaryAdapter
+        if provider == "openrouter":
+            commentary = OpenRouterCommentaryAdapter(model=model, api_key=api_key)
+        else:
+            commentary = OpenAICommentaryAdapter(model=model, api_key=api_key)
         run_path = _execute(
             request=request,
             snapshot=snapshot,
@@ -136,7 +156,7 @@ def _run_live(args: argparse.Namespace) -> int:
             watermarks=_source_watermarks(manifest),
             generated_at=dt.datetime.now(dt.UTC),
             news=GoogleNewsRssTool(client),
-            commentary=OpenAICommentaryAdapter(api_key=api_key),
+            commentary=commentary,
             execution_mode="live",
         )
     print(run_path)
@@ -166,6 +186,8 @@ def build_parser() -> argparse.ArgumentParser:
     live.add_argument("--as-of", required=True)
     live.add_argument("--run-id", required=True)
     live.add_argument("--output-root", default="runs")
+    live.add_argument("--provider", choices=("openrouter", "openai"), default="openrouter")
+    live.add_argument("--model")
     live.set_defaults(handler=_run_live)
 
     gate = commands.add_parser("gate", help="evaluate strict golden eligibility")
