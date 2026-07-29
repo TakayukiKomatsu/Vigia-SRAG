@@ -7,7 +7,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict
 
-from .agent.commentary import DEFAULT_OPENAI_MODEL
+from .agent.commentary import DEFAULT_OPENAI_MODEL, DEFAULT_OPENROUTER_MODEL
 from .agent.evidence import validate_commentary_claims
 from .agent.models import EvidenceBundle
 from .domain.source import QualityState
@@ -24,6 +24,8 @@ _REQUIRED_METRICS = frozenset(
         MetricId.ICU_USE,
     }
 )
+_NATIONAL_REQUIRED_METRICS = _REQUIRED_METRICS - {MetricId.INFLUENZA_COVERAGE}
+_APPROVED_REQUESTED_MODELS = frozenset({DEFAULT_OPENAI_MODEL, DEFAULT_OPENROUTER_MODEL})
 _REQUIRED_ARTIFACTS = frozenset(
     {
         "request.json",
@@ -85,7 +87,10 @@ def evaluate_golden_run(run_path: Path) -> GoldenGateResult:
         failures.append("not_live")
     if manifest.degraded_reasons or manifest.fallback_used:
         failures.append("degraded_or_fallback")
-    if manifest.requested_model != DEFAULT_OPENAI_MODEL or manifest.served_model == "fallback":
+    if (
+        manifest.requested_model not in _APPROVED_REQUESTED_MODELS
+        or manifest.served_model == "fallback"
+    ):
         failures.append("unapproved_or_unserved_model")
 
     artifact_names = frozenset(manifest.artifact_hashes)
@@ -113,7 +118,7 @@ def evaluate_golden_run(run_path: Path) -> GoldenGateResult:
             failures.append(f"metric_unavailable:{metric_id.value}")
         if metric.quality.state is not QualityState.AVAILABLE:
             failures.append(f"metric_quality_not_available:{metric_id.value}")
-        if metric.population_scope is not None:
+        if metric_id in _NATIONAL_REQUIRED_METRICS and metric.population_scope is not None:
             failures.append(f"metric_scoped:{metric_id.value}")
 
     series = {item.granularity: item for item in evidence.series}

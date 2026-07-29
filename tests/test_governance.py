@@ -5,7 +5,7 @@ from pathlib import Path
 
 from test_graph import _AS_OF, _GENERATED, _dependencies
 
-from srag_report.agent.commentary import DEFAULT_OPENAI_MODEL
+from srag_report.agent.commentary import DEFAULT_OPENROUTER_MODEL
 from srag_report.agent.evidence import deterministic_fallback
 from srag_report.agent.graph import run_report
 from srag_report.agent.models import CommentaryResult, EvidenceBundle, ReportRequest
@@ -27,19 +27,12 @@ def _run(tmp_path: Path) -> Path:
 def _promote_fixture_to_live_candidate(run_path: Path) -> None:
     evidence_path = run_path / "evidence.json"
     evidence = EvidenceBundle.model_validate_json(evidence_path.read_text())
-    metrics = tuple(
-        metric.model_copy(update={"population_scope": None, "limitations": ()})
-        if metric.metric_id is MetricId.INFLUENZA_COVERAGE
-        else metric
-        for metric in evidence.metrics
-    )
-    evidence = evidence.model_copy(update={"metrics": metrics})
     evidence_path.write_text(evidence.model_dump_json(indent=2) + "\n")
 
     commentary = CommentaryResult(
         claims=deterministic_fallback(evidence),
-        requested_model=DEFAULT_OPENAI_MODEL,
-        served_model="gpt-5.6-2026-07-01",
+        requested_model=DEFAULT_OPENROUTER_MODEL,
+        served_model="openai/gpt-oss-20b:free",
     )
     render_report_html(
         evidence,
@@ -67,12 +60,19 @@ def _promote_fixture_to_live_candidate(run_path: Path) -> None:
     manifest_path.write_text(manifest.model_dump_json(indent=2) + "\n")
 
 
-def test_strict_gate_accepts_only_complete_live_unscoped_run(tmp_path: Path) -> None:
+def test_strict_gate_accepts_complete_live_run_with_scoped_influenza(
+    tmp_path: Path,
+) -> None:
     run_path = _run(tmp_path)
     _promote_fixture_to_live_candidate(run_path)
+    evidence = EvidenceBundle.model_validate_json((run_path / "evidence.json").read_text())
+    influenza = next(
+        metric for metric in evidence.metrics if metric.metric_id is MetricId.INFLUENZA_COVERAGE
+    )
 
     result = evaluate_golden_run(run_path)
 
+    assert influenza.population_scope == frozenset({"CO", "NE", "S", "SE"})
     assert result.eligible
     assert result.failures == ()
 
@@ -83,7 +83,34 @@ def test_deterministic_degraded_scoped_run_is_not_golden(tmp_path: Path) -> None
     assert not result.eligible
     assert "not_live" in result.failures
     assert "degraded_or_fallback" in result.failures
-    assert "metric_scoped:influenza_coverage" in result.failures
+
+
+def test_strict_gate_rejects_scoped_non_influenza_evidence(tmp_path: Path) -> None:
+    run_path = _run(tmp_path)
+    _promote_fixture_to_live_candidate(run_path)
+    evidence_path = run_path / "evidence.json"
+    evidence = EvidenceBundle.model_validate_json(evidence_path.read_text())
+    metrics = tuple(
+        metric.model_copy(update={"population_scope": frozenset({"SE"})})
+        if metric.metric_id is MetricId.CASE_GROWTH
+        else metric
+        for metric in evidence.metrics
+    )
+    evidence_path.write_text(
+        evidence.model_copy(update={"metrics": metrics}).model_dump_json(indent=2) + "\n"
+    )
+    manifest_path = run_path / "manifest.json"
+    manifest = RunManifest.model_validate_json(manifest_path.read_text())
+    hashes = dict(manifest.artifact_hashes)
+    hashes["evidence.json"] = _digest(evidence_path)
+    manifest_path.write_text(
+        manifest.model_copy(update={"artifact_hashes": hashes}).model_dump_json(indent=2) + "\n"
+    )
+
+    result = evaluate_golden_run(run_path)
+
+    assert not result.eligible
+    assert result.failures == ("invalid_manifest_or_evidence",)
 
 
 def test_artifact_tampering_revokes_golden_eligibility(tmp_path: Path) -> None:
@@ -108,8 +135,7 @@ def test_missing_critical_publication_event_revokes_eligibility(tmp_path: Path) 
     hashes = dict(manifest.artifact_hashes)
     hashes["audit.jsonl"] = _digest(audit_path)
     manifest_path.write_text(
-        manifest.model_copy(update={"artifact_hashes": hashes}).model_dump_json(indent=2)
-        + "\n"
+        manifest.model_copy(update={"artifact_hashes": hashes}).model_dump_json(indent=2) + "\n"
     )
 
     result = evaluate_golden_run(run_path)
