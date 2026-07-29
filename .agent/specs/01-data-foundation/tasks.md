@@ -1,10 +1,17 @@
+---
+Version: 2.2
+Date: 2026-07-29
+Document Status: DRAFT
+Release Status: EXTERNAL-BLOCKED
+---
+
 # Tarefas — Fundação de dados SRAG v2
 
 > Must: 7 tarefas. Todas no Dia 1. Stretch fica em `../stretch-backlog.md`.
-> Ledger 2026-07-28: evidência de implementação concluída para T-DF-2–T-DF-7. T-DF-1 permanece bloqueada por B7/PNI nacional e pela ausência de fixture real reduzida elegível; os checkboxes dependentes permanecem abertos para não contornar o gate.
+> Ledger 2026-07-29: aquisição fresca verificou SIVEP (177445 linhas, hash `5b1de50c…359fb`) e IBGE (37 linhas de origem, hash `33dc6f79…a1b5`). CNES e PNI permanecem indisponíveis; a preparação oficial é `prepared_warning_ineligible`. T-DF-1 e dependências continuam abertas, sem promover o snapshot a referência completa.
 
 
-- [ ] **T-DF-1 [P0, D1, CH-10, CH-12, FR-DF-1, NFR-DF-2, AC-DF-1, depends: none]:** Verificar os quatro contratos oficiais e formular bloqueadores verificados; alinhar SIVEP dedup (NU_NOTIFIC estável/ano, maior completude+desempate estável, sem timestamp atualização), CNES-202606 congelado com allowlist ICU exato (61,62,63,75,76,79,80,81,82), PNI elegibilidade condicional (as_of), e tipos de fixture (sintética vs real reduzida). **Evidence:** source-contracts.md (15 bloqueadores, SIVEP/CNES/IBGE/PNI status), spec.md (canonical model, SIVEP dedup, fixture types), acceptance.feature (testes fixture), e relatório de fixture reduzida real (se elegível).
+- [ ] **T-DF-1 [P0, D1, CH-10, CH-12, FR-DF-1, NFR-DF-2, AC-DF-1, depends: none]:** Verificar os quatro contratos oficiais e formular bloqueadores verificados; alinhar SIVEP dedup (NU_NOTIFIC estável/ano, maior completude+desempate estável, sem timestamp atualização), CNES-202606 congelado com allowlist ICU exato (61,62,63,75,76,79,80,81,82), PNI elegibilidade condicional (as_of e escopo suplementar), e tipos de fixture (sintética vs real reduzida). **Evidence:** source-contracts.md (17 bloqueadores, SIVEP/CNES/IBGE/PNI status), spec.md (canonical model, SIVEP dedup, fixture types), acceptance.feature (testes fixture), e relatório de fixture reduzida real (se elegível).
 - [ ] **T-DF-2 [P0, D1, CH-10, CH-15, FR-DF-2, FR-DF-3, AC-DF-2, AC-DF-3, depends: T-DF-1]:** Congelar schema canônico, matriz de códigos/campos, semântica temporal/geográfica e allowlist de minimização. **Evidence:** contratos versionados e testes de schema.
 - [ ] **T-DF-3 [P0, D1, CH-10, FR-DF-3, FR-DF-4, AC-DF-3, depends: T-DF-2]:** Implementar parsers fixados, normalização, deduplicação, nulificação, códigos de motivo e quarentena. **Evidence:** fixtures e testes de precedência/invalidade verdes.
 - [ ] **T-DF-4 [P0, D1, CH-02, CH-15, FR-DF-5, FR-DF-6, NFR-DF-3, AC-DF-4, AC-DF-5, depends: T-DF-3]:** Materializar tabelas minimizadas e DuckDB somente leitura sem campos proibidos. **Evidence:** schema DuckDB, teste de acesso e varredura de privacidade.

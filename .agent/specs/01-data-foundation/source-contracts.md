@@ -1,13 +1,40 @@
-# Anexo de contratos de fontes oficiais
+---
+Document Status: DRAFT
+Release Status: EXTERNAL-BLOCKED
+Version: 2.2
+Owner: T-DF-1
+Date: 2026-07-29
+---
 
-> Status: DRAFT
-> Version: 2.2
-> Owner: T-DF-1
-> Last Updated: 2026-07-29
+# Anexo de contratos de fontes oficiais
 
 Este anexo é normativo para SDD 01. `UNVERIFIED` é um bloqueio explícito, não
 um valor a ser completado por suposição. Nenhum spec dependente recebe
 `FINAL` antes de todos os itens e a fixture reduzida estarem verificados.
+
+## Execução oficial reproduzível (SIVEP obrigatório)
+
+`scripts/acquire_official_sources.py` é a única etapa com rede. Ela baixa o
+SIVEP 2026 fixado abaixo e, separadamente, tenta o IBGE opcional. O arquivo
+ignorado `data/raw/acquisition.json` registra, para cada fonte, `status`, hora
+real de recuperação, URL oficial de landing e de recurso (separadas),
+declaração e URL de evidência de licença/reuso, SHA-256, tamanho, encoding,
+linhas, versão do dicionário e mapeamento selecionado. Hash, tamanho e linhas
+esperados são constantes de contrato e nunca são alterados para acomodar um
+novo download. Falha de SIVEP também grava o bloqueio ignorado
+`runs/official-source-blocked.json`; falha de IBGE fica atestada como
+indisponível e não bloqueia SIVEP.
+
+`scripts/prepare_official_snapshot.py` não faz rede: aceita somente uma
+aquisição SIVEP verificada, revalida o arquivo local e normaliza-o em streaming
+para JSONL antes de publicar o snapshot minimizado. Sem IBGE atestado, a tabela
+IBGE é vazia e mortalidade por 100 mil fica `unavailable`; CNES e PNI também
+são sempre tabelas vazias e deixam pressão de UTI e cobertura influenza
+`unavailable`. O uso suplementar de UTI entre casos SRAG permanece `available`
+com SIVEP e não representa ocupação nacional. A execução segue com qualidade
+`warning`, mas declara explicitamente `golden_eligible=false`. Dados brutos,
+snapshots e run bundles são ignorados; nenhum deles é evidência rastreada no
+repositório.
 
 ## Source Inventory — Evidence Ledger
 
@@ -275,7 +302,7 @@ Somente os seguintes códigos `COD_LEITO` são aceitos em CNES 202606:
 - Observação publicada: **2026-07-29 06:31:04**
 - Data padrão as_of: **2026-07-26**
 - Relação: **Posterior** ao as_of (violaria contrato temporal)
-- **Ação**: Elevar as_of para ≥2026-07-29, OU descartar PNI para as_of=2026-07-26
+- **Ação**: Elevar `as_of` para ≥2026-07-29 ou manter a métrica `unavailable` para `as_of=2026-07-26`; nunca retroagir o cutoff.
 
 ### Bloqueadores — PNI
 1. **B1 — Ineligibilidade Temporal**: Posterior a as_of=2026-07-26
@@ -291,11 +318,16 @@ Somente os seguintes códigos `COD_LEITO` são aceitos em CNES 202606:
 
 **Observação PNI 2026 NE/CO/S/SE**:
 - População-alvo elegível (population_scope): NE, CO, S, SE (regional, não nacional)
-- Nunca rotulada como "nacional" ou "golden"
+- Nunca rotulada como nacional; quando elegível pelo cutoff, permanece suplemento limitado
 - **Elegível somente se publicada ≤ as_of solicitado**
 - Painel atual (2026-07-29 06:31:04) > as_of padrão (2026-07-26) → `INELIGIBLE`
-- Para as_of ≥ 2026-07-29: PNI apareceria elegível, mas bloqueadores de evidência prevalecem
-- Para as_of < 2026-07-29: PNI sempre excluída
+- Para `as_of` ≥2026-07-29: pode participar do golden como suplemento scoped, desde que os bloqueadores de evidência estejam resolvidos
+- Para `as_of` <2026-07-29: fica indisponível e não satisfaz a métrica
+
+**Política de golden rebaselined**: PNI influenza é a única métrica autorizada
+a carregar `population_scope` regional. Ela nunca satisfaz um requisito
+nacional, mas pode integrar o golden como suplemento não-nacional. As outras
+cinco métricas devem permanecer nacionais e sem escopo.
 
 ---
 
@@ -364,7 +396,7 @@ T-DF-1 permanece **DRAFT** enquanto os seguintes itens forem `UNVERIFIED` ou `IN
 10. **Licença CC BY-ND**: Derivadas permitidas?
 
 ### PNI
-11. **Ineligibilidade temporal**: Painel 2026-07-29 > as_of=2026-07-26 — elevar as_of OU remover PNI
+11. **Ineligibilidade temporal**: Painel 2026-07-29 > as_of=2026-07-26 — elevar `as_of` ou manter PNI indisponível
 12. **Discrepância denominador**: 47.424.778 vs 46.718.474
 13. **Campanha Norte 2º semestre**: Ainda pendente em 2026-07-29
 14. **CSV raw**: SHA-256, tamanho, row count, encoding, delimiter

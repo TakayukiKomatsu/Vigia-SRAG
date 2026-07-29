@@ -13,6 +13,8 @@ dependencies = [
     "dbfread==2.0.7",
     "duckdb==1.5.5",
     "httpx==0.28.1",
+    "httpcore==1.0.9",
+    "defusedxml==0.7.1",
     "langgraph==1.2.10",
     "openai==2.50.0",
     "odfpy==1.4.1",

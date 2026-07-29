@@ -1,6 +1,11 @@
+# Document Status: DRAFT
+# Release Status: EXTERNAL-BLOCKED
+# Version: 2.2
+# Date: 2026-07-29
+
 @draft @agentic-reporting
 Feature: Geração agentiva fundamentada do relatório Brasil de SRAG
-  Os cenários derivam do spec.md versão 2.0.
+  Os cenários derivam do spec.md versão 2.2.
 
   @ch-01 @ch-11 @ch-13 @fr-ar-1 @fr-ar-2 @ac-ar-1
   Scenario: Orquestrar uma solicitação Brasil válida
@@ -16,7 +21,7 @@ Feature: Geração agentiva fundamentada do relatório Brasil de SRAG
     Given um "as_of" posterior ao watermark SIVEP
     When o relatório for solicitado
     Then a execução deve terminar em "validate_request"
-    And nenhuma tool nem OpenAI deve ser chamada
+    And nenhuma tool nem provedor de modelo deve ser chamado
 
   @ch-02 @ch-14 @fr-ar-3 @ac-ar-2
   Scenario: Restringir tools analíticas
@@ -44,22 +49,22 @@ Feature: Geração agentiva fundamentada do relatório Brasil de SRAG
   @ch-15 @fr-ar-5 @nfr-ar-5 @ac-ar-5
   Scenario: Congelar somente evidência agregada
     Given que o snapshot interno possui chaves técnicas e linhas clínicas
-    When o EvidenceBundle e o payload OpenAI forem construídos
+    When o EvidenceBundle e o payload do provedor forem construídos
     Then devem conter somente métricas, séries, gráficos, fontes e notícias permitidas
     And cada evidência deve possuir ID
     And nenhuma chave técnica ou linha clínica deve aparecer
 
   @ch-01 @fr-ar-6 @ac-ar-6
-  Scenario: Gerar claims OpenAI estruturadas
-    Given EvidenceBundle válido e modelo configurado aprovado no smoke
+  Scenario: Gerar claims estruturadas por provedor aprovado
+    Given EvidenceBundle válido, provedor e modelo configurados aprovados no smoke
     When o comentário for solicitado
     Then cada claim deve conter texto e IDs de evidência existentes
-    And o modelo exato deve ser auditado
-    And a saída deve respeitar no máximo 1200 tokens
+    And os modelos solicitado e servido devem ser auditados
+    And a saída deve respeitar o limite do provedor
 
   @ch-13 @fr-ar-7 @nfr-ar-1 @nfr-ar-2 @ac-ar-7
   Scenario Outline: Rejeitar claim sem fundamentação
-    Given que a OpenAI devolveu uma claim com "<violation>"
+    Given que o provedor devolveu uma claim com "<violation>"
     When o comentário for validado
     Then a claim deve ser rejeitada
     And a violação deve ser auditada
@@ -92,18 +97,18 @@ Feature: Geração agentiva fundamentada do relatório Brasil de SRAG
       | component  | result                          |
       | métrica    | relatório degradado com motivo  |
       | notícia    | relatório quantitativo          |
-      | OpenAI     | comentário factual determinístico |
+      | provedor   | comentário factual determinístico |
       | gráfico    | publicação interrompida         |
       | auditoria  | publicação interrompida         |
 
 
   @ch-13 @ch-15 @fr-ar-9 @ac-ar-10
-  Scenario: Renderizar métrica com escopo geográfico como limitada
+  Scenario: Renderizar PNI regional como suplemento limitado
     Given uma observação de campanha de vacinação com escopo regional NE/CO/S/SE
-    When o relatório for renderizado
+    When o relatório for renderizado e o golden gate for aplicado
     Then a seção de vacinação deve ser claramente marcada como limitada
     And não deve ser rotulada como cobertura nacional
-    And não deve ser elegível ao golden run
+    And pode permanecer elegível ao golden se as outras cinco métricas forem nacionais e sem escopo
     And a limitação de escopo deve estar explícita nas fontes/métodos
 
   @ch-11 @ch-12 @ch-13 @fr-ar-10 @ac-ar-11
@@ -112,12 +117,59 @@ Feature: Geração agentiva fundamentada do relatório Brasil de SRAG
     When a execução atingir um limite ou evento crítico
     Then a rota exata deve ser aplicada
     And transição, decisão, duração e artefatos devem ser auditados
-    And falha de evento crítico deve impedir OpenAI ou publicação
+    And falha de evento crítico deve impedir o provedor ou a publicação
     And o bundle não deve conter segredo, linha clínica, payload bruto ou corpo integral de notícia
 
   @ch-16 @nfr-ar-3 @nfr-ar-6 @ac-ar-12
   Scenario: Executar deterministicamente sem chamadas live no CI
-    Given OpenAI fake e RSS fixo
+    Given adaptador fake e RSS fixo
     When o mesmo EvidenceBundle for processado duas vezes
     Then claims e decisões normalizadas devem ser idênticas
-    And nenhuma chamada OpenAI ou RSS live deve ocorrer
+    And nenhuma chamada live de provedor ou RSS deve ocorrer
+
+  @ch-01 @fr-ar-6 @ac-ar-13
+  Scenario Outline: Selecionar e registrar o provedor aprovado
+    Given o modo live com provedor "<provider>"
+    When o comentário for gerado
+    Then o modelo solicitado e o modelo servido não-vazios devem ser auditados
+
+    Examples:
+      | provider   |
+      | openrouter |
+      | openai     |
+
+  @ch-13 @fr-ar-6 @fr-ar-9 @ac-ar-13
+  Scenario Outline: Validar localmente claims e classificar falhas
+    Given resposta do provedor com "<condition>"
+    When o DTO local for validado
+    Then a política documentada deve ser aplicada sem rótulo específico de provedor
+
+    Examples:
+      | condition                         |
+      | exatamente três claims válidas     |
+      | uma falha transitória e sucesso    |
+      | duas falhas transitórias           |
+      | falha 4xx não-retryable            |
+      | uma ou quatro claims               |
+      | texto longo ou com dígitos         |
+      | ID de evidência desconhecido       |
+
+  @ch-13 @ch-15 @fr-ar-4 @fr-ar-5 @fr-ar-10 @ac-ar-13
+  Scenario: Excluir notícias cruas e auditar rejeição de comentário
+    Given RSS com título malicioso e URL de artigo
+    When o payload do provedor e a rejeição forem produzidos
+    Then título, URL e IDs news não devem entrar no payload
+    And um evento sanitizado "commentary_rejected" deve conter somente IDs permitidos
+
+  @ch-03 @ch-13 @fr-ar-4 @ac-ar-14
+  Scenario Outline: Bloquear redirect e recursos RSS fora da política
+    Given uma resposta RSS com "<condition>"
+    When feed inicial ou link de artigo for buscado
+    Then nenhum destino proibido deve ser acessado
+
+    Examples:
+      | condition                         |
+      | redirect inicial para loopback     |
+      | redirect de artigo para host privado |
+      | corpo maior que um MiB             |
+      | título, fonte ou URL maior que limite |

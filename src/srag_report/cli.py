@@ -9,17 +9,25 @@ from typing import Literal
 
 import httpx
 
-from .agent.commentary import FakeCommentaryAdapter, OpenAICommentaryAdapter
+from .agent.commentary import (
+    DEFAULT_OPENAI_MODEL,
+    DEFAULT_OPENROUTER_MODEL,
+    CommentaryAdapter,
+    FakeCommentaryAdapter,
+    OpenAICommentaryAdapter,
+    OpenRouterCommentaryAdapter,
+)
 from .agent.graph import GraphDependencies, NewsTool, run_report
 from .agent.models import NewsItem, ReportRequest
 from .audit.sink import AuditSink
 from .data.publish import SnapshotManifest, load_published_snapshot_manifest
 from .demo import build_demo_snapshot
-from .domain.source import SourceFamily
+from .domain.source import SourceFamily, SourceStatus
 from .governance import evaluate_golden_run
+from .metrics.enums import MetricId
 from .reporting.bundle import RunWorkspace
 from .tools.analytics import ChartsTool, MetricsTool
-from .tools.news import GoogleNewsRssTool
+from .tools.news import GoogleNewsRssTool, PinnedHTTPTransport
 
 _SOURCES = ("SIVEP-Gripe", "CNES", "IBGE", "PNI")
 _SOURCE_LABELS = {
@@ -29,6 +37,15 @@ _SOURCE_LABELS = {
     SourceFamily.PNI: "PNI",
 }
 
+_METRIC_SOURCE_REQUIREMENTS: Mapping[MetricId, tuple[SourceFamily, ...]] = {
+    MetricId.CASE_GROWTH: (SourceFamily.SIVEP,),
+    MetricId.MORTALITY_PER_100K: (SourceFamily.SIVEP, SourceFamily.IBGE),
+    MetricId.HOSPITAL_CFR: (SourceFamily.SIVEP,),
+    MetricId.ICU_PRESSURE: (SourceFamily.SIVEP, SourceFamily.CNES),
+    MetricId.ICU_USE: (SourceFamily.SIVEP,),
+    MetricId.INFLUENZA_COVERAGE: (SourceFamily.PNI,),
+}
+
 
 def _source_watermarks(manifest: SnapshotManifest) -> dict[str, str]:
     watermarks: dict[str, str] = {}
@@ -36,6 +53,20 @@ def _source_watermarks(manifest: SnapshotManifest) -> dict[str, str]:
         label = _SOURCE_LABELS[source.family]
         watermarks[label] = max(watermarks.get(label, source.watermark), source.watermark)
     return watermarks
+
+
+def _metric_blockers(manifest: SnapshotManifest) -> dict[MetricId | str, str]:
+    verified_families = {
+        source.family for source in manifest.source_files if source.status is SourceStatus.VERIFIED
+    }
+    blockers: dict[MetricId | str, str] = {}
+    for metric_id, required_families in _METRIC_SOURCE_REQUIREMENTS.items():
+        unavailable_family = next(
+            (family for family in required_families if family not in verified_families), None
+        )
+        if unavailable_family is not None:
+            blockers[metric_id] = f"{unavailable_family.value}_source_unavailable"
+    return blockers
 
 
 class StaticDemoNewsTool:
@@ -64,13 +95,14 @@ def _execute(
     generated_at: dt.datetime,
     snapshot_watermark: dt.date,
     watermarks: Mapping[str, str],
+    blockers: Mapping[MetricId | str, str],
     news: NewsTool,
-    commentary: FakeCommentaryAdapter | OpenAICommentaryAdapter,
+    commentary: CommentaryAdapter,
     execution_mode: Literal["deterministic", "live"],
 ) -> Path:
     workspace = RunWorkspace(output_root, request)
     dependencies = GraphDependencies(
-        metrics=MetricsTool(snapshot, watermark=snapshot_watermark),
+        metrics=MetricsTool(snapshot, watermark=snapshot_watermark, blockers=blockers),
         charts=ChartsTool(),
         news=news,
         commentary=commentary,
@@ -103,6 +135,7 @@ def _run_demo(args: argparse.Namespace) -> int:
         snapshot=snapshot,
         snapshot_watermark=as_of,
         watermarks={source: as_of.isoformat() for source in _SOURCES},
+        blockers={},
         output_root=Path(args.output_root),
         news=StaticDemoNewsTool(),
         commentary=FakeCommentaryAdapter([], error=RuntimeError("deterministic fallback")),
@@ -113,9 +146,17 @@ def _run_demo(args: argparse.Namespace) -> int:
 
 
 def _run_live(args: argparse.Namespace) -> int:
-    api_key = os.environ.get("OPENAI_API_KEY")
+    provider = str(args.provider)
+    if provider == "openrouter":
+        key_name = "OPEN_ROUTER_API_KEY"
+        default_model = DEFAULT_OPENROUTER_MODEL
+    else:
+        key_name = "OPENAI_API_KEY"
+        default_model = DEFAULT_OPENAI_MODEL
+    api_key = os.environ.get(key_name)
     if not api_key:
-        raise SystemExit("OPENAI_API_KEY is required for live mode")
+        raise SystemExit(f"{key_name} is required for live mode")
+    model = str(args.model or default_model)
     as_of = _date(args.as_of)
     snapshot = Path(args.snapshot)
     manifest = load_published_snapshot_manifest(snapshot, expected_snapshot_id=args.snapshot_id)
@@ -126,17 +167,27 @@ def _run_live(args: argparse.Namespace) -> int:
         run_id=args.run_id,
     )
     with httpx.Client(
-        timeout=httpx.Timeout(15.0), follow_redirects=True, max_redirects=5
+        transport=PinnedHTTPTransport(),
+        timeout=httpx.Timeout(15.0),
+        follow_redirects=False,
+        max_redirects=0,
+        trust_env=False,
     ) as client:
+        commentary: CommentaryAdapter
+        if provider == "openrouter":
+            commentary = OpenRouterCommentaryAdapter(model=model, api_key=api_key)
+        else:
+            commentary = OpenAICommentaryAdapter(model=model, api_key=api_key)
         run_path = _execute(
             request=request,
             snapshot=snapshot,
             output_root=Path(args.output_root),
             snapshot_watermark=manifest.as_of,
             watermarks=_source_watermarks(manifest),
+            blockers=_metric_blockers(manifest),
             generated_at=dt.datetime.now(dt.UTC),
             news=GoogleNewsRssTool(client),
-            commentary=OpenAICommentaryAdapter(api_key=api_key),
+            commentary=commentary,
             execution_mode="live",
         )
     print(run_path)
@@ -166,6 +217,8 @@ def build_parser() -> argparse.ArgumentParser:
     live.add_argument("--as-of", required=True)
     live.add_argument("--run-id", required=True)
     live.add_argument("--output-root", default="runs")
+    live.add_argument("--provider", choices=("openrouter", "openai"), default="openrouter")
+    live.add_argument("--model")
     live.set_defaults(handler=_run_live)
 
     gate = commands.add_parser("gate", help="evaluate strict golden eligibility")

@@ -1,14 +1,21 @@
+---
+Version: 2.2
+Date: 2026-07-29
+Document Status: DRAFT
+Release Status: EXTERNAL-BLOCKED
+---
+
 # Tarefas — Agente e relatório fundamentado v2
 
 > Must: 8 tarefas. Todas no Dia 3. Stretch fica em `../stretch-backlog.md`.
-> Ledger 2026-07-29: evidência de implementação concluída para T-AR-1–T-AR-7. T-AR-8 está parcial: RSS live aprovado; OpenAI `gpt-5.6` alcançou a API, mas falhou com `429 insufficient_quota`; nenhum status foi promovido.
+> Ledger 2026-07-29: o run live oficial pediu `openrouter/free`, registrou `nvidia/nemotron-3-super-120b-a12b:free`, validou três claims, não usou fallback e aceitou um item RSS G1. Ele continua inelegível por degradação e artefatos/séries/gráficos/auditoria incompletos; não é golden. Os checkboxes permanecem abertos.
 
 
 - [ ] **T-AR-1 [P0, D3, CH-11, CH-12, CH-13, FR-AR-1, FR-AR-2, FR-AR-10, AC-AR-1, AC-AR-11, depends: T-MT-7]:** Implementar request/estado tipados, dez transições, `AuditSink` e rotas terminais/degradadas. **Evidence:** testes de request, transição e auditoria verde.
 - [ ] **T-AR-2 [P0, D3, CH-01, CH-02, CH-11, CH-14, FR-AR-3, AC-AR-2, depends: T-AR-1]:** Implementar tools de métricas e gráficos com schemas estreitos, acesso somente leitura e uma chamada normal. **Evidence:** testes de contrato e rejeição de SQL/campos verdes.
-- [ ] **T-AR-3 [P0, D3, CH-01, CH-03, CH-14, FR-AR-4, AC-AR-3, AC-AR-4, depends: T-AR-1]:** Implementar Google News RSS com query/locale/allowlist, redirects, datas, deduplicação, injeção, limite e retry. **Evidence:** suíte RSS fixa verde.
+- [ ] **T-AR-3 [P0, D3, CH-01, CH-03, CH-14, FR-AR-4, AC-AR-3, AC-AR-4, AC-AR-14, depends: T-AR-1]:** Implementar Google News RSS com query/locale/allowlist, redirects, datas, deduplicação, injeção, limite e retry. **Evidence:** suíte RSS fixa verde.
 - [ ] **T-AR-4 [P0, D3, CH-01, CH-11, CH-13, CH-15, FR-AR-2, FR-AR-5, NFR-AR-5, AC-AR-1, AC-AR-5, depends: T-AR-2, T-AR-3]:** Validar e congelar `EvidenceBundle` imutável e sanitizado. **Evidence:** schema, hash e varredura de privacidade verdes.
-- [ ] **T-AR-5 [P0, D3, CH-01, CH-13, FR-AR-6, FR-AR-7, FR-AR-9, NFR-AR-1, NFR-AR-2, AC-AR-6, AC-AR-7, AC-AR-9, depends: T-AR-4]:** Implementar adaptador OpenAI, claims estruturadas, validador, limites e fallback factual. **Evidence:** fake OpenAI cobre sucesso, rejeição e falha.
+- [ ] **T-AR-5 [P0, D3, CH-01, CH-13, FR-AR-6, FR-AR-7, FR-AR-9, NFR-AR-1, NFR-AR-2, AC-AR-6, AC-AR-7, AC-AR-9, AC-AR-13, depends: T-AR-4]:** Implementar OpenRouter padrão e OpenAI explícito sob `CommentaryAdapter`, claims estruturadas, modelo solicitado/servido, validador, limites e fallback factual. **Evidence:** testes cobrem sucesso, rejeição, retry e falha neutra ao provedor; smoke OpenRouter estruturado verde.
 - [ ] **T-AR-6 [P0, D3, CH-01, CH-11, CH-12, FR-AR-8, FR-AR-10, AC-AR-8, AC-AR-10, AC-AR-11, depends: T-AR-5]:** Renderizar HTML e run bundle completo com hashes, gates críticos e observações scoped. **Evidence:** artefatos conhecidos, manifesto íntegro e limitações explícitas de escopo.
-- [ ] **T-AR-7 [P1, D3, CH-13, CH-15, CH-16, FR-AR-7, FR-AR-9, FR-AR-10, NFR-AR-3, NFR-AR-4, NFR-AR-5, NFR-AR-6, AC-AR-4, AC-AR-5, AC-AR-7, AC-AR-9, AC-AR-10, AC-AR-11, AC-AR-12, depends: T-AR-6]:** Cobrir determinismo, injeção, privacidade, timeout, retry, degradação, falha de auditoria e observações scoped/limitadas. **Evidence:** suíte agentiva/security verde com cenários de escopo, timeout, retry e falha de auditoria crítica.
-- [ ] **T-AR-8 [P1, D3, CH-01, CH-03, CH-16, CH-19, FR-AR-4, FR-AR-6, NFR-AR-6, AC-AR-3, AC-AR-6, AC-AR-12, depends: T-AR-7]:** Executar smoke live do RSS e do modelo OpenAI configurado; registrar modelo/resultado sem promover status se falhar. **Evidence:** log sanitizado do smoke e decisão de gate.
+- [ ] **T-AR-7 [P1, D3, CH-13, CH-15, CH-16, FR-AR-7, FR-AR-9, FR-AR-10, NFR-AR-3, NFR-AR-4, NFR-AR-5, NFR-AR-6, AC-AR-4, AC-AR-5, AC-AR-7, AC-AR-9, AC-AR-10, AC-AR-11, AC-AR-12, depends: T-AR-6]:** Cobrir determinismo, injeção, privacidade, timeout, retry, degradação, falha de auditoria e observações scoped/limitadas. **Evidence:** suíte agentiva/security verde, incluindo PNI scoped aceita como suplemento e escopo rejeitado nas outras métricas.
+- [ ] **T-AR-8 [P1, D3, CH-01, CH-03, CH-16, CH-19, FR-AR-4, FR-AR-6, NFR-AR-6, AC-AR-3, AC-AR-6, AC-AR-12, depends: T-AR-7]:** Executar smoke live de RSS e OpenRouter configurado; registrar provedor, modelos solicitado/servido, schema, grounding e decisão do gate. **Evidence:** `examples/live-smoke-result.json` sanitizado: três claims e RSS G1, sem fallback, porém gate inelegível; não promover referência oficial.

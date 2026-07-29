@@ -1,11 +1,14 @@
-# Fundação de dados SRAG
+---
+Document Status: DRAFT
+Release Status: EXTERNAL-BLOCKED
+Tier: extended
+Version: 2.2
+Owner: Indicium HealthCare PoC
+Created: 2026-07-28
+Date: 2026-07-29
+---
 
-> Status: DRAFT
-> Tier: extended
-> Version: 2.0
-> Owner: Indicium HealthCare PoC
-> Created: 2026-07-28
-> Last Updated: 2026-07-28
+# Fundação de dados SRAG
 
 ## Summary
 
@@ -106,9 +109,11 @@ Campos preservados antes da agregação:
   residência, numerador, denominador, cobertura publicada, atualização e fonte
   (elegível somente se publicada ≤ as_of solicitado).
 
-As UFs permanecem apenas para validar/filtrar o agregado nacional e alinhar
-residência/estabelecimento; não criam saída regional no MVP. A chave SIVEP é
-usada somente antes da agregação e não aparece no DuckDB agent-facing.
+As UFs SIVEP/CNES permanecem apenas para validar/filtrar o agregado nacional e
+alinhar residência/estabelecimento. O `population_scope` PNI regional é
+preservado somente como limitação do suplemento, não como saída regional nem
+rótulo nacional. A chave SIVEP é usada somente antes da agregação e não aparece
+no DuckDB agent-facing.
 
 ### Normalization, Deduplication, and Quarantine
 
@@ -236,6 +241,9 @@ Os recursos, códigos e metadados marcados `UNVERIFIED` no anexo são
 bloqueadores com evidência e dono explícitos. Não há questão de produto aberta.
 
 ## Change Log
+
+- 2026-07-29 — v2.1: preserva `population_scope` PNI regional como limitação
+  explícita do suplemento; não exige PNI nacional para o golden.
 
 - 2026-07-28 — v2.0: reduz escopo ao Brasil e snapshots fixados; torna
   contratos oficiais e fixture um gate explícito; remove COVID-19, paridade

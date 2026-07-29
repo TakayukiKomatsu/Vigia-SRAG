@@ -1,0 +1,86 @@
+{
+  "release": {"version": "2.2", "date": "2026-07-29", "status": "EXTERNAL-BLOCKED"},
+  "snapshot": {
+    "id": "official-20260727",
+    "as_of": "2026-07-26",
+    "preparation_run_id": "official-20260727",
+    "preparation_result": "prepared_warning_ineligible"
+  },
+  "sources": {
+    "sivep": {
+      "status": "verified",
+      "official_landing_url": "https://dadosabertos.saude.gov.br/dataset/srag-2019-a-2026",
+      "official_resource_url": "https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SRAG/2026/INFLUD26-27-07-2026.csv",
+      "retrieved_at": "2026-07-29T19:59:38.491676Z",
+      "license_reuse_statement": "CC BY-ND 3.0 BR; reuse is subject to its no-derivatives terms.",
+      "license_evidence_url": "https://dadosabertos.saude.gov.br/dataset/srag-2019-a-2026",
+      "size_bytes": 198233708,
+      "data_rows": 177445,
+      "sha256": "5b1de50c4ca58b1c7068d61f58b42772d1634a06917d41443443fff1fdd359fb",
+      "encoding": "utf-8",
+      "dictionary_version": "dicionario-de-dados-2019-a-2025.pdf (2026-01-29)",
+      "mapping_verified": true,
+      "mapping_sha256": "f7ac001c70fa658c6173baa1d7e71f54ccca8972498053112f7688bda40e6ec7",
+      "watermark": "2026-07-26"
+    },
+    "ibge": {
+      "status": "verified",
+      "official_landing_url": "https://www.ibge.gov.br/estatisticas/sociais/populacao/9103-estimativas-de-populacao.html",
+      "official_resource_url": "https://ftp.ibge.gov.br/Estimativas_de_Populacao/Estimativas_2025/POP2025_20260113.ods",
+      "retrieved_at": "2026-07-29T19:59:43.453296Z",
+      "license_reuse_statement": "Public-domain aggregated official data; attribution to IBGE/DPE/COPIS required.",
+      "license_evidence_url": "https://www.ibge.gov.br/acesso-informacao/institucional/2018-05-31-15-17-49.html",
+      "size_bytes": 212846,
+      "data_rows": 37,
+      "sha256": "33dc6f79def9522e282cd69b87a9ce75327a81239d6060d9c8f9f5a49bd2a1b5",
+      "encoding": "ods",
+      "dictionary_version": "POP2025_20260113.ods",
+      "mapping_verified": true,
+      "mapping_sha256": "9ed01917b50ba64878cb73cc8c58ba981cd2a5acfa06cb997155c3e198f087d0",
+      "watermark": "2025-07-01"
+    },
+    "cnes": {"status": "unavailable", "reason": "cnes_source_unavailable"},
+    "pni": {"status": "unavailable", "reason": "pni_source_unavailable"}
+  },
+  "normalization": {
+    "sivep": {"accepted": 177445, "filtered": 0, "quarantined": 0, "deduplicated": 0, "total_input": 177445},
+    "ibge": {"accepted": 1, "filtered": 35, "quarantined": 0, "deduplicated": 0, "total_input": 36},
+    "cnes": {"accepted": 0, "filtered": 0, "quarantined": 0, "deduplicated": 0, "total_input": 0},
+    "pni": {"accepted": 0, "filtered": 0, "quarantined": 0, "deduplicated": 0, "total_input": 0}
+  },
+  "minimization": {
+    "table_counts": {"sivep_cases": 177445, "ibge_population": 1, "cnes_icu_beds": 0, "pni_observations": 0, "source_contracts": 1},
+    "excluded_data_classes": ["local paths", "raw records", "field mappings", "credentials", "article content", "restricted text"]
+  },
+  "hashes": {
+    "canonical_snapshot_sha256": "df0a3cd8aaf69f5b06dffbbf736f570b205d43a724a82536562d27d556f89b22",
+    "content_sha256": "df0a3cd8aaf69f5b06dffbbf736f570b205d43a724a82536562d27d556f89b22",
+    "file_sha256": "02cf5df961774db9aff00460f47383b396181788e4c1c15c4058c9f89b4fa0c7",
+    "provenance_sha256": "37d9e2757b98b8935674d6e9b821612baaf411a707586beb1df45780b7c79ba2"
+  },
+  "effective_watermarks": {"sivep": "2026-07-26", "ibge": "2025-07-01"},
+  "preparation": {
+    "golden_eligible": false,
+    "golden_ineligibility_reasons": ["cnes_source_unavailable", "pni_source_unavailable"]
+  },
+  "run": {"id": "official-20260727-openrouter-20260729", "snapshot_id": "official-20260727", "execution_mode": "live"},
+  "metrics": {
+    "case_growth": {"state": "available", "reason": null},
+    "mortality_per_100k": {"state": "available", "reason": null},
+    "hospital_cfr": {"state": "available", "reason": null},
+    "icu_pressure": {"state": "unavailable", "reason": "structural_blocker", "blocker": "cnes_source_unavailable"},
+    "icu_use": {"state": "available", "reason": null},
+    "influenza_coverage": {"state": "unavailable", "reason": "structural_blocker", "blocker": "pni_source_unavailable"}
+  },
+  "gate": {
+    "eligible": false,
+    "failures": ["degraded_or_fallback", "incomplete_artifact_set", "metric_unavailable:influenza_coverage", "metric_quality_not_available:influenza_coverage", "metric_unavailable:icu_pressure", "metric_quality_not_available:icu_pressure", "monthly_series_incomplete", "chart_set_incomplete", "audit_node_order_invalid"]
+  },
+  "commentary": {"requested_model": "openrouter/free", "served_model": "nvidia/nemotron-3-super-120b-a12b:free", "validated_claim_count": 3, "fallback_used": false},
+  "rss": {"accepted_item_count": 1, "accepted_sources": ["G1"]},
+  "limitations": {
+    "icu_use": "SRAG-case proportion, not national occupancy.",
+    "icu_pressure": "Unavailable without CNES capacity data; no national occupancy claim.",
+    "influenza_coverage": "Unavailable because the official PNI source was unavailable."
+  }
+}

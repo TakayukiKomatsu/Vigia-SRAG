@@ -1,6 +1,11 @@
+# Document Status: DRAFT
+# Release Status: EXTERNAL-BLOCKED
+# Version: 2.2
+# Date: 2026-07-29
+
 @draft @metrics
 Feature: Métricas e gráficos epidemiológicos Brasil de SRAG
-  Os cenários derivam do spec.md versão 2.0.
+  Os cenários derivam do spec.md versão 2.2.
 
   Background:
     Given que existe um snapshot canônico Brasil com contratos verificados
@@ -110,11 +115,26 @@ Feature: Métricas e gráficos epidemiológicos Brasil de SRAG
     And population_scope deve estar ausente ou não deve ser "BR"
 
   @ch-07 @fr-mt-7 @ac-mt-7
-  Scenario: Observação 2026 escopo não nationwide não satisfaz golden
-    Given uma observação elegível da campanha 2026 com população_scope = "NE,CO,S,SE"
-    When o golden run exigir todas as quatro métricas e ambas as séries
-    Then a observação com escopo NE,CO,S,SE não satisfaz o requisito nationwide
-    And o golden run não passa sem uma observação nationwide futura
+  Scenario: Manter observação 2026 regional como suplemento do golden
+    Given uma observação elegível da campanha 2026 com population_scope = "NE,CO,S,SE"
+    When o golden run exigir as seis métricas e ambas as séries
+    Then a observação deve permanecer explicitamente regional e suplementar
+    And nunca deve ser rotulada como "nationwide"
+    And o golden run pode passar quando as outras cinco métricas forem nacionais e sem escopo
+
+  @ch-07 @ch-13 @fr-mt-7 @fr-mt-10 @ac-mt-12
+  Scenario: Rejeitar cobertura disponível sem escopo e preservar indisponibilidade válida
+    Given cobertura de influenza disponível sem population_scope
+    When o manifesto for validado
+    Then a execução deve falhar com "influenza_scope_missing"
+    Given cobertura de influenza indisponível sem population_scope
+    Then o resultado indisponível deve continuar válido
+
+  @ch-07 @ch-13 @fr-mt-10 @ac-mt-12
+  Scenario: Rejeitar escopo em métrica nacional no carregamento
+    Given evidência serializada de case_growth com population_scope
+    When o manifesto for carregado
+    Then deve falhar com "invalid_manifest_or_evidence"
 
   @ch-08 @fr-mt-8 @fr-mt-10 @nfr-mt-5 @ac-mt-8
   Scenario: Produzir série e gráfico diário fiéis

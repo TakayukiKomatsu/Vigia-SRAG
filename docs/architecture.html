@@ -3,118 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Arquitetura conceitual — Relatório SRAG</title>
+<meta name="release-version" content="2.2">
+<meta name="release-date" content="2026-07-29">
+<meta name="release-status" content="EXTERNAL-BLOCKED">
+<title>Vigia SRAG — arquitetura v2.2</title>
 <style>
-@page { size: A4 landscape; margin: 8mm; }
-* { box-sizing: border-box; }
-body { margin: 0; background: #eef3f7; color: #13212d; font: 10px/1.3 Arial, sans-serif; }
-.page { width: 281mm; min-height: 194mm; margin: auto; padding: 7mm; background: white; }
-header { display: flex; justify-content: space-between; align-items: end; border-bottom: 3px solid #0072b2; padding-bottom: 3mm; }
-h1 { margin: 0; font-size: 21px; } header p { margin: 0; color: #52616d; }
-.flow { display: grid; grid-template-columns: 1.15fr .75fr 1.1fr .95fr 1.1fr; gap: 5mm; margin-top: 5mm; align-items: stretch; }
-.column { display: flex; flex-direction: column; gap: 3mm; position: relative; }
-.column:not(:last-child)::after { content: "→"; position: absolute; right: -4.5mm; top: 43%; color: #0072b2; font-size: 22px; font-weight: bold; }
-.box { border: 1px solid #9babb8; border-radius: 6px; padding: 3mm; background: #f8fafc; }
-.box h2, .box h3 { margin: 0 0 1.5mm; } .box h2 { font-size: 13px; } .box h3 { font-size: 11px; }
-.source { border-left: 4px solid #009e73; } .warn { border-left: 4px solid #e69f00; background: #fff9e8; }
-.boundary { border: 2px dashed #d55e00; background: #fff8f4; } .agent { border-left: 4px solid #0072b2; }
-.audit { border-left: 4px solid #cc79a7; } .output { border-left: 4px solid #56b4e9; }
-ul, ol { margin: 1mm 0 0; padding-left: 4mm; } li { margin: .5mm 0; }
-.nodes { columns: 2; column-gap: 4mm; font-size: 8.7px; }
-footer { display: grid; grid-template-columns: 1.35fr 1fr; gap: 5mm; margin-top: 4mm; }
-.legend { display: flex; flex-wrap: wrap; gap: 2mm 4mm; }
-.legend span::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 1mm; border-radius: 2px; vertical-align: -1px; }
-.l-source::before { background: #009e73; } .l-agent::before { background: #0072b2; }
-.l-untrusted::before { background: #e69f00; } .l-sensitive::before { background: #d55e00; }
-.l-audit::before { background: #cc79a7; }
-.small { font-size: 8.5px; color: #44535f; }
-@media print { body { background: white; } .page { margin: 0; } }
+@page { size: A4 landscape; margin: 7mm; }
+* { box-sizing: border-box; } body { margin:0; background:#edf3f7; color:#14232e; font:9.2px/1.23 Arial,sans-serif; }
+.page { width:283mm; height:196mm; padding:6mm; margin:auto; background:#fff; overflow:hidden; }
+header { display:flex; justify-content:space-between; align-items:end; border-bottom:3px solid #0877ad; padding-bottom:2.5mm; } h1{margin:0;font-size:19px} p{margin:0}.meta{color:#4a5d68;text-align:right}
+.flow{display:grid;grid-template-columns:1.1fr .83fr 1.1fr 1.08fr 1.08fr;gap:4mm;margin-top:4mm;height:139mm}.col{display:flex;flex-direction:column;gap:2.5mm;position:relative}.col:not(:last-child):after{content:"→";position:absolute;right:-3.6mm;top:45%;font-size:20px;font-weight:bold;color:#0877ad}.box{border:1px solid #99aab5;border-radius:5px;padding:2.5mm;background:#f8fafb}.box h2,.box h3{margin:0 0 1mm}.box h2{font-size:11.2px}.box h3{font-size:9.8px}.source{border-left:4px solid #009e73}.agent{border-left:4px solid #0877ad}.audit{border-left:4px solid #cc79a7}.output{border-left:4px solid #56b4e9}.warn{border-left:4px solid #e69f00;background:#fff9e9}.boundary{border:2px dashed #d55e00;background:#fff8f3}ul,ol{margin:0;padding-left:4mm}li{margin:.45mm 0}.nodes{columns:2;column-gap:3mm;font-size:8.3px}.small{font-size:8.1px;color:#465863}footer{display:grid;grid-template-columns:1.7fr 1fr;gap:4mm;margin-top:3mm}.legend{display:flex;flex-wrap:wrap;gap:1mm 4mm}.tag{font-weight:bold;color:#8a4d00}@media print{body{background:#fff}.page{margin:0}}
 </style>
 </head>
-<body>
-<main class="page">
-<header>
-  <div><h1>Relatório epidemiológico de SRAG — arquitetura conceitual</h1>
-  <p>PoC Brasil · agregados fundamentados · execução auditável e fail-closed</p></div>
-  <p>Fonte imprimível · v2 · 2026-07-28</p>
-</header>
-
-<section class="flow" aria-label="Fluxo principal de dados e geração do relatório">
-  <div class="column">
-    <div class="box source"><h2>Fontes públicas de saúde</h2>
-      <ul><li><strong>SIVEP-Gripe</strong> 2025/2026 — casos e evolução</li>
-      <li><strong>CNES</strong> 202606 — leitos UTI allowlisted</li>
-      <li><strong>IBGE</strong> 2025 — população Brasil</li>
-      <li><strong>PNI</strong> 2026 — cobertura influenza</li></ul>
-    </div>
-    <div class="box boundary"><h3>Limite sensível</h3>
-      Arquivos brutos, registros clínicos, chaves de notificação e colunas não permitidas ficam fora do agente e do run bundle.
-    </div>
-    <div class="box warn"><h3>PNI scoped</h3>
-      Observação atual NE/CO/S/SE: exibida como limitada e nunca elegível ao golden nacional.
-    </div>
-  </div>
-
-  <div class="column">
-    <div class="box"><h2>Fundação de dados</h2>
-      <ol><li>contratos e hashes</li><li>normalização estrita</li><li>deduplicação/quarentena</li><li>minimização</li><li>qualidade e publicação atômica</li></ol>
-    </div>
-    <div class="box"><h2>DuckDB</h2>
-      Snapshot fixado, schema mínimo e abertura <strong>somente leitura</strong>.
-      <p class="small">Nenhuma query arbitrária atravessa a tool.</p>
-    </div>
-  </div>
-
-  <div class="column">
-    <div class="box agent"><h2>Tools estreitas</h2>
-      <ul><li><strong>MetricsTool</strong>: 4 métricas + 2 suplementos, séries 30d/12m</li>
-      <li><strong>ChartsTool</strong>: SVG determinístico e acessível</li>
-      <li><strong>NewsTool</strong>: Google News RSS, query/locale/14d/allowlist fixos</li></ul>
-    </div>
-    <div class="box warn"><h3>Notícia é conteúdo não confiável</h3>
-      Redirects e destinos são validados; texto não controla tools, grafo ou prompt. Sem corpo integral de artigo.
-    </div>
-    <div class="box boundary"><h3>Fronteira do agente</h3>
-      Somente agregados, séries, hashes, metadados e notícias permitidas entram no <strong>EvidenceBundle</strong> imutável.
-    </div>
-  </div>
-
-  <div class="column">
-    <div class="box agent"><h2>LangGraph fixo</h2>
-      <ol class="nodes"><li>validate_request</li><li>select_snapshot</li><li>collect_metrics</li><li>render_charts</li><li>search_news</li><li>validate_evidence</li><li>generate_commentary</li><li>validate_commentary</li><li>render_report</li><li>finalize_run</li></ol>
-    </div>
-    <div class="box"><h2>OpenAI + fallback</h2>
-      Structured output Pydantic; uma repetição transitória. Falha/rejeição produz comentário factual determinístico.
-    </div>
-    <div class="box boundary"><h3>Validador de claims</h3>
-      IDs devem existir; números devem constar da evidência. Rejeita URL, causalidade, clínica e prompt injection.
-    </div>
-  </div>
-
-  <div class="column">
-    <div class="box output"><h2>Renderer HTML</h2>
-      Escapa conteúdo, mostra qualidade, métodos, períodos, fontes, watermarks, limitações, modo e <code>run_id</code>.
-    </div>
-    <div class="box audit"><h2>AuditSink</h2>
-      JSONL append-only, flush + fsync antes de OpenAI/publicação; transições, decisões, duração, modelo e hashes — sem segredo/payload bruto.
-    </div>
-    <div class="box output"><h2>Run bundle atômico</h2>
-      <ul><li>request.json</li><li>evidence.json</li><li>audit.jsonl</li><li>charts/*.svg</li><li>report.html</li><li>manifest.json</li></ul>
-      Diretório candidato é validado e renomeado; <code>run_id</code> nunca é sobrescrito.
-    </div>
-  </div>
+<body><main class="page">
+<header><div><h1>Vigia SRAG — arquitetura</h1><p>Agregados fundamentados · execução auditável · fail-closed</p></div><p class="meta">v2.2 · 2026-07-29<br>EXTERNAL-BLOCKED</p></header>
+<section class="flow" aria-label="Fluxo de dados, ferramentas, orquestração e bundle">
+<div class="col"><div class="box source"><h2>Fontes oficiais</h2><ul><li>SIVEP e IBGE: contratos, hash e minimização</li><li>CNES: necessário para pressão UTI</li><li>PNI: necessário para cobertura influenza</li></ul></div><div class="box warn"><h3>Estado fresco</h3>SIVEP/IBGE verificados; CNES/PNI indisponíveis. Uso de UTI é proporção de casos SRAG, não ocupação nacional.</div><div class="box boundary"><h3>Limite sensível</h3>Brutos, registros clínicos, IDs e segredos não entram no agente, relatório ou bundle versionado.</div></div>
+<div class="col"><div class="box"><h2>Preparação</h2><ol><li>aquisição atestada</li><li>normalização/quarentena</li><li>agregação mínima</li><li>qualidade e publicação atômica</li></ol></div><div class="box"><h2>DuckDB</h2>Snapshot fixado, somente leitura; nenhuma SQL/tabela/linha livre atravessa uma tool.</div><div class="box warn"><h3>Limites de métrica</h3>Sem CNES, `icu_pressure` indisponível; sem PNI oficial, cobertura indisponível.</div></div>
+<div class="col"><div class="box agent"><h2>Tools</h2><ul><li>Metrics: resultados e séries agregados</li><li>Charts: SVG determinístico</li><li>RSS: Google News, query/locale/janela/allowlist fixos</li></ul></div><div class="box warn"><h3>RSS limitado</h3>HTTP(S), 80/443, DNS pinado, redirects revalidados, 1 MiB, XML seguro e campos limitados.</div><div class="box boundary"><h3>EvidenceBundle</h3>Somente métricas/séries/gráficos/metadados permitidos; títulos, URLs e IDs RSS não entram na visão LLM.</div></div>
+<div class="col"><div class="box agent"><h2>Orquestrador LangGraph</h2><ol class="nodes"><li>request</li><li>snapshot</li><li>metrics</li><li>charts</li><li>RSS</li><li>evidence</li><li>LLM</li><li>validator</li><li>HTML</li><li>finalize</li></ol></div><div class="box"><h2>LLM OpenRouter / OpenAI</h2>DTO local, exatamente três claims, modelos solicitado/servido. Falhas neutras ao provedor levam a fallback factual degradado.</div><div class="box boundary"><h3>Validador</h3>Permite apenas IDs/números presentes; rejeita URLs inventadas, causalidade, clínica e injeção.</div></div>
+<div class="col"><div class="box audit"><h2>Audit sink</h2>JSONL append-only, flush/fsync antes de provedor/publicação; evento de guardrail sanitizado, sem prompt, payload ou segredo.</div><div class="box output"><h2>Bundle atômico</h2>request, evidência, auditoria, gráficos, HTML e manifesto; `run_id` não é sobrescrito.</div><div class="box warn"><h3>Gate interno</h3>Confere consistência e evidência de execução: hashes, ordem, modelo e publicação. <span class="tag">Não</span> é prova de autenticidade criptográfica.</div></div>
 </section>
-
-<footer>
-  <div class="box"><h3>Invariantes de governança</h3>
-    Golden exige execução live, métricas nacionais disponíveis, gráficos completos, notícia recente, claims OpenAI válidas, hashes e evento crítico. Degradação demonstra resiliência, mas não substitui o golden.
-  </div>
-  <div class="box"><h3>Legenda</h3><div class="legend">
-    <span class="l-source">fonte verificada</span><span class="l-agent">orquestração/tool</span>
-    <span class="l-untrusted">não confiável/limitado</span><span class="l-sensitive">fronteira sensível</span>
-    <span class="l-audit">auditoria</span></div>
-  </div>
-</footer>
-</main>
-</body>
-</html>
+<footer><div class="box"><h3>Fluxo e decisão</h3>Fontes → preparação/DuckDB → tools/RSS → EvidenceBundle minimizado → orquestrador/LLM/validador → relatório, auditoria e bundle. O candidato reproduzido tem 3 claims e RSS G1, mas falha por degradação, artefatos/séries/gráficos incompletos, métricas indisponíveis e ordem de auditoria.</div><div class="box"><h3>Limite externo</h3>Repositório, clone anônimo e quickstart públicos verificados na SHA <code>35ca509</code>; CNES/PNI, bundle golden e tag/asset externo permanecem <strong>EXTERNAL-BLOCKED</strong>.</div></footer>
+</main></body></html>

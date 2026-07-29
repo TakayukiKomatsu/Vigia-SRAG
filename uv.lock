@@ -826,7 +826,9 @@ source = { editable = "." }
 dependencies = [
     { name = "datasus-dbc" },
     { name = "dbfread" },
+    { name = "defusedxml" },
     { name = "duckdb" },
+    { name = "httpcore" },
     { name = "httpx" },
     { name = "langgraph" },
     { name = "odfpy" },
@@ -845,7 +847,9 @@ dev = [
 requires-dist = [
     { name = "datasus-dbc", specifier = "==0.1.3" },
     { name = "dbfread", specifier = "==2.0.7" },
+    { name = "defusedxml", specifier = "==0.7.1" },
     { name = "duckdb", specifier = "==1.5.5" },
+    { name = "httpcore", specifier = "==1.0.9" },
     { name = "httpx", specifier = "==0.28.1" },
     { name = "langgraph", specifier = "==1.2.10" },
     { name = "mypy", marker = "extra == 'dev'", specifier = "==1.13.0" },
