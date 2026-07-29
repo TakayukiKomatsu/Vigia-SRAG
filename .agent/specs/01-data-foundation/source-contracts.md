@@ -9,6 +9,29 @@ Este anexo é normativo para SDD 01. `UNVERIFIED` é um bloqueio explícito, nã
 um valor a ser completado por suposição. Nenhum spec dependente recebe
 `FINAL` antes de todos os itens e a fixture reduzida estarem verificados.
 
+## Execução oficial reproduzível (SIVEP obrigatório)
+
+`scripts/acquire_official_sources.py` é a única etapa com rede. Ela baixa o
+SIVEP 2026 fixado abaixo e, separadamente, tenta o IBGE opcional. O arquivo
+ignorado `data/raw/acquisition.json` registra, para cada fonte, `status`, hora
+real de recuperação, URL oficial de landing e de recurso (separadas),
+declaração e URL de evidência de licença/reuso, SHA-256, tamanho, encoding,
+linhas, versão do dicionário e mapeamento selecionado. Hash, tamanho e linhas
+esperados são constantes de contrato e nunca são alterados para acomodar um
+novo download. Falha de SIVEP também grava o bloqueio ignorado
+`runs/official-source-blocked.json`; falha de IBGE fica atestada como
+indisponível e não bloqueia SIVEP.
+
+`scripts/prepare_official_snapshot.py` não faz rede: aceita somente uma
+aquisição SIVEP verificada, revalida o arquivo local e normaliza-o em streaming
+para JSONL antes de publicar o snapshot minimizado. Sem IBGE atestado, a tabela
+IBGE é vazia e mortalidade por 100 mil fica `unavailable`; CNES e PNI também
+são sempre tabelas vazias e deixam pressão/uso de UTI e cobertura influenza
+`unavailable`. A execução segue com qualidade `warning`, mas declara
+explicitamente `golden_eligible=false`. Dados brutos, JSONL intermediário,
+snapshots e run bundles são ignorados; nenhum deles é evidência rastreada no
+repositório.
+
 ## Source Inventory — Evidence Ledger
 
 | Família | Entrada oficial | Seleção do MVP | Estado |
