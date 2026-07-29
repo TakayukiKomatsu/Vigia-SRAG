@@ -6,5 +6,5 @@
   "available_metrics": ["case_growth", "mortality_per_100k", "hospital_cfr", "icu_use"],
   "unavailable_metrics": {"icu_pressure": "CNES source unavailable; no national occupancy claim", "influenza_coverage": "official PNI source unavailable"},
   "gate": {"eligible": false, "failures": ["degraded_or_fallback", "incomplete_artifact_set", "metric_unavailable:influenza_coverage", "metric_quality_not_available:influenza_coverage", "metric_unavailable:icu_pressure", "metric_quality_not_available:icu_pressure", "monthly_series_incomplete", "chart_set_incomplete", "audit_node_order_invalid"], "meaning": "internal consistency and execution-evidence check; not cryptographic authenticity"},
-  "publication": {"public_release": "owner-only pending", "anonymous_clone": "blocked"}
+  "publication": {"public_repository": "https://github.com/TakayukiKomatsu/Vigia-SRAG", "published_branch": "feature/openrouter-completion", "published_sha": "35ca509446374e0bd539ae19fba2eb6f8d255722", "anonymous_clone": "passed", "deterministic_quickstart": "passed", "external_release": "pending"}
 }

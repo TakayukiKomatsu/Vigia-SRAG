@@ -8,7 +8,7 @@ Release Status: EXTERNAL-BLOCKED
 # Tarefas — Governança e entrega v2
 
 > Must: 6 tarefas. Dias 4 e 5. Stretch fica em `../stretch-backlog.md`.
-> Ledger 2026-07-29: o gate do run oficial foi deliberadamente inelegível (`degraded_or_fallback`, artefatos/séries/gráficos incompletos, métricas indisponíveis e ordem de auditoria inválida). Ele verifica consistência/evidência de execução, não autenticidade criptográfica. T-GD-1 e T-GD-6 permanecem abertos; publicação pública e clone anônimo são handoff exclusivo do owner.
+> Ledger 2026-07-29: o gate do run oficial foi deliberadamente inelegível (`degraded_or_fallback`, artefatos/séries/gráficos incompletos, métricas indisponíveis e ordem de auditoria inválida). Ele verifica consistência/evidência de execução, não autenticidade criptográfica. T-GD-1 e T-GD-6 permanecem abertos; repositório público, clone anônimo, quickstart e 373 testes foram reproduzidos na SHA `35ca509`, enquanto tag/asset externo continuam pendentes.
 
 
 - [ ] **T-GD-1 [P0, D4, CH-01, CH-03, CH-04, CH-05, CH-06, CH-07, CH-08, CH-09, CH-12, FR-GD-1, NFR-GD-1, NFR-GD-2, AC-GD-1, AC-GD-10, AC-GD-11, depends: T-AR-8]:** Construir e validar golden estrito com valores reais, notícia live, claims válidas e bundle sanitizado completo. Permitir `population_scope` apenas em influenza suplementar e rejeitá-lo nas outras cinco métricas. **Evidence:** relatório/bundle oficial de referência e assertions verdes para os dois caminhos de escopo.

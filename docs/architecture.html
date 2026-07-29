@@ -6,7 +6,7 @@
 <meta name="release-version" content="2.2">
 <meta name="release-date" content="2026-07-29">
 <meta name="release-status" content="EXTERNAL-BLOCKED">
-<title>Arquitetura SRAG v2.2</title>
+<title>Vigia SRAG — arquitetura v2.2</title>
 <style>
 @page { size: A4 landscape; margin: 7mm; }
 * { box-sizing: border-box; } body { margin:0; background:#edf3f7; color:#14232e; font:9.2px/1.23 Arial,sans-serif; }
@@ -16,7 +16,7 @@ header { display:flex; justify-content:space-between; align-items:end; border-bo
 </style>
 </head>
 <body><main class="page">
-<header><div><h1>Relatório epidemiológico de SRAG — arquitetura</h1><p>Agregados fundamentados · execução auditável · fail-closed</p></div><p class="meta">v2.2 · 2026-07-29<br>EXTERNAL-BLOCKED</p></header>
+<header><div><h1>Vigia SRAG — arquitetura</h1><p>Agregados fundamentados · execução auditável · fail-closed</p></div><p class="meta">v2.2 · 2026-07-29<br>EXTERNAL-BLOCKED</p></header>
 <section class="flow" aria-label="Fluxo de dados, ferramentas, orquestração e bundle">
 <div class="col"><div class="box source"><h2>Fontes oficiais</h2><ul><li>SIVEP e IBGE: contratos, hash e minimização</li><li>CNES: necessário para pressão UTI</li><li>PNI: necessário para cobertura influenza</li></ul></div><div class="box warn"><h3>Estado fresco</h3>SIVEP/IBGE verificados; CNES/PNI indisponíveis. Uso de UTI é proporção de casos SRAG, não ocupação nacional.</div><div class="box boundary"><h3>Limite sensível</h3>Brutos, registros clínicos, IDs e segredos não entram no agente, relatório ou bundle versionado.</div></div>
 <div class="col"><div class="box"><h2>Preparação</h2><ol><li>aquisição atestada</li><li>normalização/quarentena</li><li>agregação mínima</li><li>qualidade e publicação atômica</li></ol></div><div class="box"><h2>DuckDB</h2>Snapshot fixado, somente leitura; nenhuma SQL/tabela/linha livre atravessa uma tool.</div><div class="box warn"><h3>Limites de métrica</h3>Sem CNES, `icu_pressure` indisponível; sem PNI oficial, cobertura indisponível.</div></div>
@@ -24,5 +24,5 @@ header { display:flex; justify-content:space-between; align-items:end; border-bo
 <div class="col"><div class="box agent"><h2>Orquestrador LangGraph</h2><ol class="nodes"><li>request</li><li>snapshot</li><li>metrics</li><li>charts</li><li>RSS</li><li>evidence</li><li>LLM</li><li>validator</li><li>HTML</li><li>finalize</li></ol></div><div class="box"><h2>LLM OpenRouter / OpenAI</h2>DTO local, exatamente três claims, modelos solicitado/servido. Falhas neutras ao provedor levam a fallback factual degradado.</div><div class="box boundary"><h3>Validador</h3>Permite apenas IDs/números presentes; rejeita URLs inventadas, causalidade, clínica e injeção.</div></div>
 <div class="col"><div class="box audit"><h2>Audit sink</h2>JSONL append-only, flush/fsync antes de provedor/publicação; evento de guardrail sanitizado, sem prompt, payload ou segredo.</div><div class="box output"><h2>Bundle atômico</h2>request, evidência, auditoria, gráficos, HTML e manifesto; `run_id` não é sobrescrito.</div><div class="box warn"><h3>Gate interno</h3>Confere consistência e evidência de execução: hashes, ordem, modelo e publicação. <span class="tag">Não</span> é prova de autenticidade criptográfica.</div></div>
 </section>
-<footer><div class="box"><h3>Fluxo e decisão</h3>Fontes → preparação/DuckDB → tools/RSS → EvidenceBundle minimizado → orquestrador/LLM/validador → relatório, auditoria e bundle. O candidato reproduzido tem 3 claims e RSS G1, mas falha por degradação, artefatos/séries/gráficos incompletos, métricas indisponíveis e ordem de auditoria.</div><div class="box"><h3>Limite externo</h3>Release público e clone anônimo são responsabilidade do owner; até então: <strong>EXTERNAL-BLOCKED</strong>.</div></footer>
+<footer><div class="box"><h3>Fluxo e decisão</h3>Fontes → preparação/DuckDB → tools/RSS → EvidenceBundle minimizado → orquestrador/LLM/validador → relatório, auditoria e bundle. O candidato reproduzido tem 3 claims e RSS G1, mas falha por degradação, artefatos/séries/gráficos incompletos, métricas indisponíveis e ordem de auditoria.</div><div class="box"><h3>Limite externo</h3>Repositório, clone anônimo e quickstart públicos verificados na SHA <code>35ca509</code>; CNES/PNI, bundle golden e tag/asset externo permanecem <strong>EXTERNAL-BLOCKED</strong>.</div></footer>
 </main></body></html>

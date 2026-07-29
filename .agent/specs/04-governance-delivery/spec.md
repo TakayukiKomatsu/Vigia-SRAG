@@ -226,8 +226,9 @@ Stretch não começa antes dos 28 itens Must e do golden estrito.
 ## Open Questions
 
 O smoke OpenRouter e o gate estrito sobre fixture permitida estão verdes.
-Contratos oficiais restantes, bundle de referência real e URL pública continuam
-como bloqueadores explícitos; este spec permanece `DRAFT`.
+Contratos oficiais restantes, bundle de referência real e tag/asset de release
+externo continuam como bloqueadores explícitos; o repositório público, clone sem
+autenticação e quickstart já foram reproduzidos, mas este spec permanece `DRAFT`.
 
 ## Change Log
 

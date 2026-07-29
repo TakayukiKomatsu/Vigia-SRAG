@@ -3,7 +3,9 @@
 > Document Status: DRAFT
 > Release Status: EXTERNAL-BLOCKED
 
-# Relatório epidemiológico de SRAG — Brasil
+# Vigia SRAG
+
+Relatórios epidemiológicos auditáveis, fundamentados em dados oficiais.
 
 PoC em Python 3.12 que prepara um snapshot DuckDB minimizado, calcula métricas agregadas e publica um relatório HTML fundamentado. Registros clínicos, identificadores, SQL livre, payloads de notícia e segredos não cruzam a fronteira do agente.
 
@@ -67,4 +69,4 @@ Elegibilidade requer execução live sem degradação/fallback, métricas e sér
 
 O diagrama de uma página A4 paisagem está em `docs/architecture.html` e `docs/architecture.pdf`. Os exemplos sanitizados são `examples/live-smoke-result.json` e `examples/official-source-run.json`; não contêm linhas brutas, segredos, caminhos absolutos ou texto restrito.
 
-A publicação pública e a verificação de clone anônimo são ações exclusivas do owner. Enquanto URL pública, SHA publicada e clone sem autenticação não forem reproduzidos, o release permanece `EXTERNAL-BLOCKED`.
+O repositório público é `https://github.com/TakayukiKomatsu/Vigia-SRAG`. O clone HTTPS sem autenticação, o quickstart determinístico e a suíte de 373 testes foram reproduzidos na SHA `35ca509446374e0bd539ae19fba2eb6f8d255722`; o release permanece `EXTERNAL-BLOCKED` pelos dados CNES/PNI ausentes, bundle golden incompleto e release externo sem tag/asset atestados.

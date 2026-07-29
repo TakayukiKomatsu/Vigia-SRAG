@@ -43,10 +43,10 @@ e evidência planejada. Não significa que a aplicação já foi implementada.
 | Redirect, DNS e limites RSS | `FR-AR-4` | `AC-AR-14` | `T-AR-3`, `T-AR-7` | `tests/test_news.py` | Implementação local |
 | Escopo de influenza e schema nacional | `FR-MT-7`, `FR-MT-10` | `AC-MT-12` | `T-MT-6` | `tests/test_governance.py` | Implementação local |
 | SIVEP/IBGE oficial, CNES/PNI indisponíveis | `FR-GD-1` | `AC-GD-11` | `T-GD-1` | preparação fresca: SIVEP 177445/hash `5b1de50c…359fb`; IBGE 37/hash `33dc6f79…a1b5` | EXTERNAL-BLOCKED; run oficial inelegível |
-| Metadados, conteúdo, histórico e release público | `FR-GD-6`, `FR-GD-7` | `AC-GD-12` | `T-GD-6` | `tests/test_release_checks.py`, `scripts/check_external_release.py` | Público/clone continuam bloqueados |
+| Metadados, conteúdo, histórico e release público | `FR-GD-6`, `FR-GD-7` | `AC-GD-12` | `T-GD-6` | `tests/test_release_checks.py`, `scripts/check_external_release.py` | Repositório, clone anônimo e quickstart verificados na SHA `35ca509`; tag/asset externo pendente |
 
 ## Review Result
 
 - Cobertura documental v2.2: `COVERED BY CONTRACT`.
 - Evidência fresca: OpenRouter/RSS live registrou três claims válidas, sem fallback, e um item G1; o run oficial continua inelegível por limitações explícitas.
-- Finalização: `EXTERNAL-BLOCKED` até CNES/PNI oficiais, bundle completo, URL pública e clone não autenticado reproduzido pelo owner.
+- Finalização: `EXTERNAL-BLOCKED` até CNES/PNI oficiais, bundle completo e tag/asset de release externo vinculados à SHA imutável; o repositório e clone não autenticado já foram reproduzidos.
