@@ -114,6 +114,9 @@ def test_openrouter_stream_returns_grounded_claims_and_served_model() -> None:
     claims_schema = request["response_format"]["json_schema"]["schema"]["properties"][  # type: ignore[index]
         "claims"
     ]
+    claim_item_schema = claims_schema["items"]
+    assert claim_item_schema["required"] == ["text", "evidence_ids"]
+    assert "claim_id" not in claim_item_schema["properties"]
     assert claims_schema["minItems"] == claims_schema["maxItems"] == 3
     assert text_schema["maxLength"] == 240
     assert text_schema["pattern"] == "^[^0-9]*$"

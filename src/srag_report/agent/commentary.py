@@ -56,7 +56,6 @@ def _openrouter_response_format(evidence_ids: Sequence[str]) -> ResponseFormatJS
                                 "additionalProperties": False,
                                 "required": ["text", "evidence_ids"],
                                 "properties": {
-                                    "claim_id": {"type": "string"},
                                     "text": {
                                         "type": "string",
                                         "maxLength": 240,
