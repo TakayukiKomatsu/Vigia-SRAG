@@ -17,7 +17,7 @@ Keep influenza vaccination coverage in the evidence bundle and report with its r
 - `requested_model: str`
 - `generate(evidence: EvidenceBundle) -> CommentaryResult`
 
-It calls OpenRouter's OpenAI-compatible `POST /api/v1/chat/completions` endpoint with streaming enabled and a strict JSON schema matching `CommentaryClaims`. The prompt includes the exact evidence-ID allowlist. Returned claims pass through `CommentaryClaims` parsing and the existing `validate_commentary_claims` guard before the adapter returns.
+It reuses the installed `openai` Python package with `OpenAI(base_url="https://openrouter.ai/api/v1", api_key=...)` and calls `client.chat.completions.create` with streaming enabled and a strict JSON schema matching `CommentaryClaims`. No dependency is added. The prompt includes the exact evidence-ID allowlist. Returned claims pass through `CommentaryClaims` parsing and the existing `validate_commentary_claims` guard before the adapter returns.
 
 The adapter records:
 
