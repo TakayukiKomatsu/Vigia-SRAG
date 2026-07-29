@@ -7,8 +7,8 @@ import sys
 from pathlib import Path
 
 import pytest
-
 from data.test_publish import _artifact, _contract, _normalization, _quality, _source
+
 from srag_report.cli import main
 from srag_report.data.publish import publish_snapshot
 from srag_report.metrics.time import WatermarkError
