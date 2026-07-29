@@ -1,7 +1,7 @@
 # Tarefas — Agente e relatório fundamentado v2
 
 > Must: 8 tarefas. Todas no Dia 3. Stretch fica em `../stretch-backlog.md`.
-> Ledger 2026-07-28: evidência de implementação concluída para T-AR-1–T-AR-7. T-AR-8 está parcial: RSS live aprovado; OpenAI `gpt-5.6` não executado por ausência de `OPENAI_API_KEY`; nenhum status foi promovido.
+> Ledger 2026-07-29: evidência de implementação concluída para T-AR-1–T-AR-7. T-AR-8 está parcial: RSS live aprovado; OpenAI `gpt-5.6` alcançou a API, mas falhou com `429 insufficient_quota`; nenhum status foi promovido.
 
 
 - [ ] **T-AR-1 [P0, D3, CH-11, CH-12, CH-13, FR-AR-1, FR-AR-2, FR-AR-10, AC-AR-1, AC-AR-11, depends: T-MT-7]:** Implementar request/estado tipados, dez transições, `AuditSink` e rotas terminais/degradadas. **Evidence:** testes de request, transição e auditoria verde.

@@ -57,8 +57,8 @@ uv run srag-report live \
 O modelo solicitado padrão é `gpt-5.6`; `manifest.json` registra modelo solicitado, modelo servido, modo, fallback, claims e hashes. Falha de OpenAI após uma repetição permitida produz comentário determinístico e torna a execução degradada. Notícia ausente degrada para relatório quantitativo. Falha de auditoria, snapshot, gráfico, renderer ou publicação interrompe a execução.
 
 O último smoke sanitizado fica em `examples/live-smoke-result.json`. Ele não promove
-golden: RSS foi exercitado ao vivo, mas OpenAI permanece `not_run` enquanto a variável
-obrigatória não estiver configurada.
+golden: RSS foi exercitado ao vivo; OpenAI alcançou a API, mas falhou com
+`429 insufficient_quota`, portanto nenhum resultado live foi promovido.
 
 ## Golden gate estrito
 

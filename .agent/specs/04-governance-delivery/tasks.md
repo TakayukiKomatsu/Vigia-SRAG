@@ -1,7 +1,7 @@
 # Tarefas — Governança e entrega v2
 
 > Must: 6 tarefas. Dias 4 e 5. Stretch fica em `../stretch-backlog.md`.
-> Ledger 2026-07-28: evidência concluída para T-GD-2 e T-GD-4; T-GD-3 está parcial. T-GD-1, T-GD-5 e T-GD-6 permanecem abertas por PNI/OpenAI/golden/publicação, portanto nenhuma dependência foi promovida indevidamente.
+> Ledger 2026-07-29: evidência concluída para T-GD-2, T-GD-4 e T-GD-5; T-GD-3 está parcial. T-GD-1 e T-GD-6 permanecem abertas por PNI, quota OpenAI, golden e publicação, portanto nenhuma dependência foi promovida indevidamente.
 
 
 - [ ] **T-GD-1 [P0, D4, CH-01, CH-03, CH-04, CH-05, CH-06, CH-07, CH-08, CH-09, CH-12, FR-GD-1, NFR-GD-1, NFR-GD-2, AC-GD-1, AC-GD-10, depends: T-AR-8]:** Construir e validar o golden estrito com valores reais nacionalmente elegíveis (não-scoped), notícia live, claims válidas e bundle sanitizado completo. Rejeitar observações com escopo geográfico. **Evidence:** relatório/bundle de referência e assertions verdes com exclusão de scoped.

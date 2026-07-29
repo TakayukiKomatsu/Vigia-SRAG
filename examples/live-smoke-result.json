@@ -1,14 +1,14 @@
 {
-  "recorded_at": "2026-07-28",
+  "recorded_at": "2026-07-29",
   "google_news_rss": {
     "status": "success",
     "accepted_items": 1,
     "sources": ["G1"]
   },
   "openai": {
-    "status": "not_run",
+    "status": "failed",
     "requested_model": "gpt-5.6",
-    "reason": "OPENAI_API_KEY is not configured in the execution environment"
+    "reason": "OpenAI API returned 429 insufficient_quota; billing or project quota is not available"
   },
   "golden_status_promoted": false
 }
