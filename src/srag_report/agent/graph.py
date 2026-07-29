@@ -18,9 +18,11 @@ from ..reporting.bundle import RunWorkspace
 from ..reporting.html import render_report_html
 from ..tools.analytics import ChartsTool, MetricsTool
 from .commentary import CommentaryAdapter, generate_or_fallback
+from .commentary import commentary_evidence_ids
 from .evidence import build_evidence_bundle, deterministic_fallback, validate_commentary_claims
 from .models import (
     CommentaryResult,
+    CommentaryFailureCode,
     EventStatus,
     EvidenceBundle,
     NewsItem,
@@ -199,7 +201,8 @@ def build_report_graph(
         )
         update: ReportState = {"commentary": commentary}
         if commentary.fallback_used:
-            update["degraded_reasons"] = _degraded(state, "openai_unavailable")
+            assert commentary.failure_code is not None
+            update["degraded_reasons"] = _degraded(state, commentary.failure_code.value)
         return update
 
     def validate_commentary(state: ReportState) -> ReportState:
@@ -208,16 +211,26 @@ def build_report_graph(
             claims = validate_commentary_claims(commentary.claims, state["evidence"])
             return {"commentary": commentary.model_copy(update={"claims": claims})}
         except ValueError:
+            dependencies.audit.emit(
+                event_type="guardrail",
+                component="validate_commentary",
+                status=EventStatus.DEGRADED,
+                summary=CommentaryFailureCode.COMMENTARY_REJECTED.value,
+                evidence_ids=commentary_evidence_ids(state["evidence"]),
+            )
             fallback = CommentaryResult(
                 claims=deterministic_fallback(state["evidence"]),
                 requested_model=commentary.requested_model,
                 served_model=commentary.served_model,
                 fallback_used=True,
+                failure_code=CommentaryFailureCode.COMMENTARY_REJECTED,
             )
             validate_commentary_claims(fallback.claims, state["evidence"])
             return {
                 "commentary": fallback,
-                "degraded_reasons": _degraded(state, "commentary_rejected"),
+                "degraded_reasons": _degraded(
+                    state, CommentaryFailureCode.COMMENTARY_REJECTED.value
+                ),
             }
 
     def render_report(state: ReportState) -> ReportState:

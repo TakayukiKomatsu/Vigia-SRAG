@@ -13,9 +13,14 @@ from openai import OpenAI
 
 from srag_report.agent.commentary import (
     DEFAULT_OPENROUTER_MODEL,
+    CommentaryOutputInvalidError,
+    CommentaryProviderUnavailableError,
     OpenRouterCommentaryAdapter,
+    commentary_evidence_ids,
+    generate_or_fallback,
 )
-from srag_report.agent.models import EvidenceBundle
+from srag_report.agent.models import CommentaryFailureCode, CommentaryResult, EvidenceBundle
+from pydantic import ValidationError
 
 
 class FakeCompletions:
@@ -47,17 +52,14 @@ def _claims(*, evidence_id: str = "metric:case_growth") -> str:
         {
             "claims": [
                 {
-                    "claim_id": "claim-1",
                     "text": "O indicador de crescimento está disponível.",
                     "evidence_ids": [evidence_id],
                 },
                 {
-                    "claim_id": "claim-2",
                     "text": "O indicador de mortalidade está disponível.",
                     "evidence_ids": ["metric:mortality_per_100k"],
                 },
                 {
-                    "claim_id": "claim-3",
                     "text": "A evidência de pressão sobre UTI está disponível.",
                     "evidence_ids": ["metric:icu_pressure"],
                 },
@@ -108,19 +110,24 @@ def test_openrouter_stream_returns_grounded_claims_and_served_model() -> None:
         "reasoning": {"effort": "none", "exclude": True},
     }
     assert request["response_format"]["type"] == "json_schema"  # type: ignore[index]
-    text_schema = request["response_format"]["json_schema"]["schema"]["properties"][  # type: ignore[index]
-        "claims"
-    ]["items"]["properties"]["text"]
-    claims_schema = request["response_format"]["json_schema"]["schema"]["properties"][  # type: ignore[index]
-        "claims"
-    ]
-    claim_item_schema = claims_schema["items"]
+    schema = request["response_format"]["json_schema"]["schema"]  # type: ignore[index]
+    claims_schema = schema["properties"]["claims"]
+    claim_item_schema = schema["$defs"]["ProviderCommentaryClaim"]
+    text_schema = claim_item_schema["properties"]["text"]
     assert claim_item_schema["required"] == ["text", "evidence_ids"]
     assert "claim_id" not in claim_item_schema["properties"]
     assert claims_schema["minItems"] == claims_schema["maxItems"] == 3
     assert text_schema["maxLength"] == 240
-    assert text_schema["pattern"] == "^[^0-9]*$"
+    assert text_schema["pattern"] == "^[^\\p{Nd}]*$"
     assert '"metric:case_growth"' in request["messages"][1]["content"]  # type: ignore[index]
+    prompt = request["messages"][1]["content"]  # type: ignore[index]
+    assert "news:" not in prompt
+    for item in _evidence().news:
+        assert item.title not in prompt
+        assert item.final_url not in prompt
+    assert set(commentary_evidence_ids(_evidence())) == {
+        evidence_id for evidence_id in _evidence().evidence_ids() if not evidence_id.startswith("news:")
+    }
 
 
 def test_openrouter_retries_one_transient_failure() -> None:
@@ -144,12 +151,8 @@ def test_openrouter_retries_one_invalid_structured_response() -> None:
     assert len(completions.calls) == 2
 
 
-def test_openrouter_assigns_deterministic_ids_when_provider_omits_them() -> None:
-    without_ids = json.loads(_claims())
-    for claim in without_ids["claims"]:
-        del claim["claim_id"]
-
-    result = _adapter(FakeCompletions(_stream(json.dumps(without_ids)))).generate(_evidence())
+def test_openrouter_assigns_deterministic_ids_after_provider_validation() -> None:
+    result = _adapter(FakeCompletions(_stream(_claims()))).generate(_evidence())
 
     assert [claim.claim_id for claim in result.claims] == [
         "openrouter-claim-1",
@@ -159,11 +162,112 @@ def test_openrouter_assigns_deterministic_ids_when_provider_omits_them() -> None
 
 
 @pytest.mark.parametrize(
+    "payload",
+    [
+        {"claims": [{"text": "Claim válida", "evidence_ids": ["metric:case_growth"]}]},
+        {"claims": [
+            {"text": f"Claim {letter}", "evidence_ids": ["metric:case_growth"]}
+            for letter in ("A", "B", "C", "D")
+        ]},
+        {"claims": [{"text": "A" * 241, "evidence_ids": ["metric:case_growth"]}] * 3},
+        {"claims": [{"text": "Crescimento 50", "evidence_ids": ["metric:case_growth"]}] * 3},
+        {"claims": [{"text": "Crescimento ５０", "evidence_ids": ["metric:case_growth"]}] * 3},
+        {"claims": [{"text": "Crescimento ٥٠", "evidence_ids": ["metric:case_growth"]}] * 3},
+        {"claims": [{
+            "claim_id": "provider-id",
+            "text": "Claim válida",
+            "evidence_ids": ["metric:case_growth"],
+        }] * 3},
+        {"claims": [{"text": "Claim válida", "evidence_ids": ["news:news-1"]}] * 3},
+    ],
+)
+def test_openrouter_rejects_provider_output_outside_local_schema(payload: object) -> None:
+    completions = FakeCompletions(_stream(json.dumps(payload)), _stream(json.dumps(payload)))
+
+    with pytest.raises((ValueError, ValidationError)):
+        _adapter(completions).generate(_evidence())
+
+    assert len(completions.calls) == 2
+
+
+def test_openrouter_does_not_retry_bad_request() -> None:
+    error = openai.BadRequestError(
+        "bad request",
+        response=httpx.Response(
+            400,
+            request=httpx.Request("POST", "https://openrouter.ai/api/v1/chat/completions"),
+        ),
+        body=None,
+    )
+    completions = FakeCompletions(error, _stream(_claims()))
+
+    with pytest.raises(openai.BadRequestError):
+        _adapter(completions).generate(_evidence())
+
+    assert len(completions.calls) == 1
+
+
+@pytest.mark.parametrize(("status_code", "requests"), [(503, 2), (400, 1)])
+def test_openrouter_sdk_client_attempts_are_owned_by_adapter(
+    status_code: int, requests: int
+) -> None:
+    recorded: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        recorded.append(request)
+        return httpx.Response(status_code, request=request, json={"error": "synthetic"})
+
+    http_client = httpx.Client(transport=httpx.MockTransport(handler))
+    client = OpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key="test-key",
+        max_retries=0,
+        http_client=http_client,
+    )
+    try:
+        with pytest.raises(
+            CommentaryProviderUnavailableError if status_code == 503 else openai.BadRequestError
+        ):
+            OpenRouterCommentaryAdapter(client=client).generate(_evidence())
+    finally:
+        http_client.close()
+
+    assert len(recorded) == requests
+
+
+def test_invalid_provider_output_gets_a_provider_neutral_failure_code() -> None:
+    result = generate_or_fallback(
+        _adapter(FakeCompletions(_stream("not-json"), _stream("not-json"))), _evidence()
+    )
+
+    assert result.fallback_used
+    assert result.failure_code is CommentaryFailureCode.MODEL_OUTPUT_INVALID
+
+
+def test_commentary_result_requires_failure_code_exactly_for_fallback() -> None:
+    claims = _adapter(FakeCompletions(_stream(_claims()))).generate(_evidence()).claims
+    with pytest.raises(ValidationError):
+        CommentaryResult(
+            claims=claims,
+            requested_model="requested",
+            served_model="fallback",
+            fallback_used=True,
+        )
+    with pytest.raises(ValidationError):
+        CommentaryResult(
+            claims=claims,
+            requested_model="requested",
+            served_model="served",
+            failure_code=CommentaryFailureCode.MODEL_OUTPUT_INVALID,
+        )
+
+
+@pytest.mark.parametrize(
     ("stream", "error_type"),
     [
         (_stream("not-json"), ValueError),
-        (_stream(_claims(), finish_reason="length"), RuntimeError),
-        (_stream(_claims(), model=None), RuntimeError),
+        (_stream(_claims(), finish_reason="length"), CommentaryOutputInvalidError),
+        (_stream(_claims(), model=None), CommentaryOutputInvalidError),
         (_stream(_claims(evidence_id="metric:unknown")), ValueError),
     ],
 )

@@ -187,6 +187,7 @@ def test_live_selects_provider_adapter_and_model(
     commentary = captured["commentary"]
     assert isinstance(commentary, adapter_type)
     assert commentary.requested_model == expected_model
+    assert commentary._client.max_retries == 0
 
 
 def test_live_rejects_as_of_after_published_snapshot_watermark(

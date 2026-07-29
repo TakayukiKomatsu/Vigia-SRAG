@@ -26,7 +26,7 @@ from .domain.source import SourceFamily
 from .governance import evaluate_golden_run
 from .reporting.bundle import RunWorkspace
 from .tools.analytics import ChartsTool, MetricsTool
-from .tools.news import GoogleNewsRssTool
+from .tools.news import GoogleNewsRssTool, PinnedHTTPTransport
 
 _SOURCES = ("SIVEP-Gripe", "CNES", "IBGE", "PNI")
 _SOURCE_LABELS = {
@@ -141,7 +141,11 @@ def _run_live(args: argparse.Namespace) -> int:
         run_id=args.run_id,
     )
     with httpx.Client(
-        timeout=httpx.Timeout(15.0), follow_redirects=True, max_redirects=5
+        transport=PinnedHTTPTransport(),
+        timeout=httpx.Timeout(15.0),
+        follow_redirects=False,
+        max_redirects=0,
+        trust_env=False,
     ) as client:
         commentary: CommentaryAdapter
         if provider == "openrouter":

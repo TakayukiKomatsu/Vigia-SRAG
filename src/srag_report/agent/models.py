@@ -48,9 +48,9 @@ class NewsItem(BaseModel):
     model_config = ConfigDict(strict=True, frozen=True, extra="forbid")
 
     news_id: str
-    title: str
-    source: str
-    final_url: str
+    title: str = Field(min_length=1, max_length=300)
+    source: str = Field(min_length=1, max_length=100)
+    final_url: str = Field(min_length=1, max_length=2_048)
     published_at: dt.datetime
     collected_at: dt.datetime
 
@@ -169,6 +169,25 @@ class CommentaryClaims(BaseModel):
     claims: tuple[CommentaryClaim, ...]
 
 
+class CommentaryFailureCode(StrEnum):
+    MODEL_PROVIDER_UNAVAILABLE = "model_provider_unavailable"
+    MODEL_OUTPUT_INVALID = "model_output_invalid"
+    COMMENTARY_REJECTED = "commentary_rejected"
+
+
+class ProviderCommentaryClaim(BaseModel):
+    model_config = ConfigDict(strict=True, frozen=True, extra="forbid")
+
+    text: str = Field(min_length=1, max_length=240, pattern=r"^[^\p{Nd}]*$")
+    evidence_ids: tuple[str, ...] = Field(min_length=1)
+
+
+class ProviderCommentaryClaims(BaseModel):
+    model_config = ConfigDict(strict=True, frozen=True, extra="forbid")
+
+    claims: tuple[ProviderCommentaryClaim, ProviderCommentaryClaim, ProviderCommentaryClaim]
+
+
 class CommentaryResult(BaseModel):
     model_config = ConfigDict(strict=True, frozen=True, extra="forbid")
 
@@ -176,6 +195,13 @@ class CommentaryResult(BaseModel):
     requested_model: str
     served_model: str
     fallback_used: bool = False
+    failure_code: CommentaryFailureCode | None = None
+
+    @model_validator(mode="after")
+    def _fallback_has_failure_code(self) -> CommentaryResult:
+        if self.fallback_used != (self.failure_code is not None):
+            raise ValueError("fallback_used must match presence of failure_code")
+        return self
 
 
 class AuditEvent(BaseModel):

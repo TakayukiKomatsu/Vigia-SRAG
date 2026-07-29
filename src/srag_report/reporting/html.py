@@ -87,7 +87,7 @@ def render_report_html(
     if commentary.fallback_used:
         fallback = (
             '<p class="limited">Comentário factual determinístico usado após '
-            "falha/rejeição da OpenAI.</p>"
+            "falha/rejeição do provedor de comentários.</p>"
         )
     document = f"""<!doctype html>
 <html lang="pt-BR">
